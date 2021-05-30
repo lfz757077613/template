@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <shutdownHook class="cn.laifuzhi.template.utils.LogbackShutdownHook"/>
+
+    <property name="LOG_PATH" value="${user.home}/logs"/>
+
+    <appender name="infoAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/application.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%X{trace:--} ${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/application.%i.log</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>10</maxIndex>
+        </rollingPolicy>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>2GB</maxFileSize>
+        </triggeringPolicy>
+    </appender>
+    <appender name="async_infoAppender" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="infoAppender"/>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>2048</queueSize>
+        <maxFlushTime>0</maxFlushTime>
+    </appender>
+
+    <appender name="errorAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/error.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%X{trace:--} ${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/error.%i.log</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>10</maxIndex>
+        </rollingPolicy>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>2GB</maxFileSize>
+        </triggeringPolicy>
+    </appender>
+    <appender name="async_errorAppender" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="errorAppender"/>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>2048</queueSize>
+        <maxFlushTime>0</maxFlushTime>
+    </appender>
+
+    <appender name="myAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/my.log</file>
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%X{trace:--} ${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/my.%i.log</fileNamePattern>
+            <minIndex>1</minIndex>
+            <maxIndex>10</maxIndex>
+        </rollingPolicy>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>2GB</maxFileSize>
+        </triggeringPolicy>
+    </appender>
+    <appender name="async_myAppender" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="myAppender"/>
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>2048</queueSize>
+        <maxFlushTime>0</maxFlushTime>
+    </appender>
+
+    <logger name="myLogger" additivity="false" level="INFO">
+        <appender-ref ref="async_myAppender"/>
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="async_infoAppender"/>
+        <appender-ref ref="async_errorAppender"/>
+    </root>
+</configuration>

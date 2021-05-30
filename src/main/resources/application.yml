@@ -1,0 +1,59 @@
+server:
+  shutdown: graceful
+# springboot2.5该参数变为true了，会造成spring容器关闭和日志系统关闭并行进行(jvm的shutdownHook并行执行)，所以可能spring还没关比呢，日志系统就不可用了
+# https://github.com/spring-projects/spring-boot/issues/26660 待解决后就可以使用默认值了
+logging:
+  register-shutdown-hook: false
+spring:
+  output:
+    ansi:
+      enabled: never
+  application:
+    name: template
+  main:
+    banner-mode: off
+  datasource:
+    url: ${mysql.url}?useUnicode=true&characterEncoding=UTF-8
+    username: ${mysql.username}
+    password: ${mysql.password}
+#     使用hikari推荐的固定池配置
+    hikari:
+      validation_timeout: 1500
+      connection-timeout: 2000
+      max-lifetime: 300000
+      keepalive-time: 100000
+      maximum-pool-size: 50
+  sql:
+    init:
+      encoding: utf-8
+      schema-locations: classpath:dbInit.sql
+  mail:
+    host: smtp.qq.com
+    username: 757077613@qq.com
+    password: 你自己的密码
+    properties:
+      mail.smtp.auth: true
+      mail.debug: true
+      mail.smtp.connectiontimeout: 2000
+      mail.smtp.timeout: 2000
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+
+
+# 自定义配置
+template:
+  grpcPort: 10051
+  grpcThreadCount: 200
+  grpcThreadQueue: 2048
+  validationTimeout: 1500
+  connectionTimeout: 2000
+  maxLifeTime: 300000
+  maximumPoolSize: 10
+  # sql默认超时时间，想个性配置可以在mapper文件中单独配置timeout
+  defaultDBTimeout: 5
+  metadataDBUrl: ${mysql.url}?useUnicode=true&characterEncoding=UTF-8
+  metadataDBUsername: ${mysql.username}
+  metadataDBPassword: ${mysql.password}
+  metadataMapperLocation: classpath:mapper/*.xml
+  metadataDBInit: classpath:dbInit.sql

@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+option java_outer_classname = "MetadataProto";
+option java_multiple_files = true;
+option java_package = "cn.laifuzhi.template.grpc";
+
+import "google/protobuf/any.proto";
+
+enum RespCode {
+    SUCCESS = 0;
+    ILLEGAL_PARAM = 1;
+    UNEXPECTED_ERROR = 2;
+}
+
+message MetadataResp {
+  int32 code = 1;
+  string message = 2;
+  google.protobuf.Any data = 3;
+}
+
+service MetadataHandler {
+  rpc QueryBroker (QueryBrokerReq) returns (MetadataResp) {}
+}
+
+message QueryBrokerReq {
+  string brokerName = 1;
+}
+
+message QueryBrokerData {
+  string brokerName = 1;
+}
