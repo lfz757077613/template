@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.laifuzhi.template.dao.OrderInfoDao">
+    <sql id="allFields">
+        id,
+        uid,
+        order_id as orderId,
+        state,
+        create_ts as createTs,
+        update_ts as updateTs
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_info(uid, order_id, state)
+        VALUES(#{uid}, #{orderId}, #{state})
+    </insert>
+
+    <update id="updateState">
+        UPDATE order_info
+        <set>
+            state=#{state},
+        </set>
+        <where>
+            and uid=#{uid}
+            and order_id=#{orderId}
+        </where>
+    </update>
+
+    <select id="select" resultType="cn.laifuzhi.template.model.PO.OrderInfoPO">
+        select
+        <include refid="allFields"/>
+        from order_info
+        <where>
+            and uid=#{uid}
+            and order_id=#{orderId}
+        </where>
+    </select>
+
+    <select id="selectForUpdate" resultType="cn.laifuzhi.template.model.PO.OrderInfoPO">
+        select
+        <include refid="allFields"/>
+        from order_info
+        <where>
+            and uid=#{uid}
+            and order_id=#{orderId}
+        </where>
+        for update
+    </select>
+<!-- delete和update的子查询推荐用join，否则可能不走索引，或者表名加别名 -->
+<!-- https://mp.weixin.qq.com/s/Z6RePk6avMjffRkUtOgKTg -->
+<!-- 查询每组中最新的一个记录 -->
+<!-- like concat('%', #{regionId}, '%')避免模糊查询sql注入 -->
+<!--    <select id="queryLastPublishTaskByCluster" resultType="com.alibaba.messaging.ops.data.entity.ops.publish.PublishTaskDO">-->
+<!--        SELECT-->
+<!--        <include refid="allFields"/>-->
+<!--        FROM ops_publish_info-->
+<!--        <where>-->
+<!--            id in(-->
+<!-- in里如果没东西，也没有问题 -->
+<!--            select max(id) from ops_publish_info-->
+<!-- where标签中如果没有东西，mybatis不会拼接where语句 -->
+<!--            <where>-->
+<!--                <if test="regionId != null and regionId !=''">-->
+<!--                    and region_id like concat('%', #{regionId}, '%')-->
+<!--                </if>-->
+<!--                <if test="clusters != null and clusters.size() > 0">-->
+<!--                    and cluster_name in-->
+<!--                    <foreach collection="clusters" open="(" close=")" separator="," item="clusterName">-->
+<!--                        #{clusterName}-->
+<!--                    </foreach>-->
+<!--                </if>-->
+<!--            </where>-->
+<!--            GROUP BY cluster_name-->
+<!--            )-->
+<!--        </where>-->
+<!--    </select>-->
+
+<!-- 删除指定天之外的数据，使用数据库时间避免时区问题 -->
+<!--    <delete id="deleteByDays">-->
+<!--        delete from ops_publish_info where create_ts &lt; subdate(now(), #{days})-->
+<!--    </delete>-->
+</mapper>

@@ -17,8 +17,22 @@
             <fileMode>0755</fileMode>
             <!--如果是脚本，一定要改为unix.如果是在windows上面编码，会出现dos编写问题-->
             <lineEnding>unix</lineEnding>
-            <!-- 是否进行属性替换，会将bin目录下的脚本中的一些变量引用进行赋值 -->
-            <filtered>true</filtered>
+            <!-- 是否进行变量替换，会将bin目录下的脚本中的一些变量用maven中的property替换，${xx}或@xx@都可以替换 -->
+<!--            <filtered>true</filtered>-->
+        </fileSet>
+
+        <fileSet>
+            <!-- maven编译目录target/classes -->
+            <directory>${project.build.outputDirectory}</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <!-- 复制静态配置文件，jar目录下的application.yml优先级大于jar包下的 -->
+                <include>application.yml</include>
+                <!-- 复制动态配置文件 -->
+                <include>dynamicConf.json</include>
+                <!-- 复制健康检查文件 -->
+                <include>healthCheck</include>
+            </includes>
         </fileSet>
 
         <fileSet>

@@ -9,7 +9,7 @@ import javax.annotation.Resource;
 
 @Slf4j
 @Component
-public class MailClient {
+public final class MailClient {
     @Resource
     private JavaMailSender sender;
 

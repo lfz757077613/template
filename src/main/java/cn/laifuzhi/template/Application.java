@@ -1,19 +1,51 @@
 package cn.laifuzhi.template;
 
-import cn.laifuzhi.template.server.GrpcServer;
-import cn.laifuzhi.template.server.NettyServer;
-import cn.laifuzhi.template.service.DynamicConfigService;
-import cn.laifuzhi.template.utils.DirectMemReporter;
+import cn.laifuzhi.template.grpc.GrpcServer;
+import cn.laifuzhi.template.matrix.DirectMemReporter;
+import cn.laifuzhi.template.netty.NettyServer;
+import cn.laifuzhi.template.service.DynamicConfigDBService;
+import cn.laifuzhi.template.utils.CommonRunnable;
+import com.alibaba.druid.support.http.ResourceServlet;
+import com.alibaba.druid.support.http.StatViewFilter;
+import com.alibaba.druid.support.http.WebStatFilter;
+import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.mybatis.spring.annotation.MapperScan;
-import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
+import org.springframework.boot.autoconfigure.sql.init.SqlInitializationAutoConfiguration;
+import org.springframework.boot.autoconfigure.transaction.TransactionAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
+import org.springframework.boot.web.servlet.DelegatingFilterProxyRegistrationBean;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.Ordered;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.method.HandlerTypePredicate;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.socket.config.annotation.EnableWebSocket;
+import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
+import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
+import org.springframework.web.socket.handler.TextWebSocketHandler;
+import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
+import org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor;
+
+import static cn.laifuzhi.template.utils.Const.FilterName.COMMON_FILTER;
 
 /*
                        _oo0oo_
@@ -38,14 +70,44 @@ import org.springframework.context.support.GenericApplicationContext;
 
                佛祖保佑         永无BUG
 */
+
+/**
+ * springboot默认添加的filter
+ * Mapping filters: characterEncodingFilter urls=[/*] order=-2147483648, formContentFilter urls=[/*] order=-9900, requestContextFilter urls=[/*] order=-105
+ * spring的dispatcherServlet的url-pattern是/不是/*，仅仅替换了servlet容器的默认servlet
+ * Mapping servlets: dispatcherServlet urls=[/]
+ */
 @Slf4j
-@SpringBootApplication
-@MapperScan("cn.laifuzhi.template.dao")
+@EnableWebSocket
+@EnableScheduling
+@EnableTransactionManagement(proxyTargetClass = true)
+@SpringBootApplication(exclude = {
+//        TaskSchedulingAutoConfiguration.class,
+//        TaskExecutionAutoConfiguration.class,
+//        NettyAutoConfiguration.class,
+        DataSourceAutoConfiguration.class,
+        DataSourceTransactionManagerAutoConfiguration.class,
+        TransactionAutoConfiguration.class,
+        JdbcTemplateAutoConfiguration.class,
+        SqlInitializationAutoConfiguration.class,
+//        RestTemplateAutoConfiguration.class,
+//        GsonAutoConfiguration.class,
+//        PersistenceExceptionTranslationAutoConfiguration.class,
+})
+//@MapperScan("cn.laifuzhi.template.dao")
 @PropertySource(value = {"classpath:conf.properties"}, encoding = "UTF-8")
-public class Application {
+public class Application implements WebServerFactoryCustomizer<TomcatServletWebServerFactory>, WebMvcConfigurer, WebSocketConfigurer {
     @Getter
-    private static boolean started;
-    private static ConfigurableApplicationContext applicationContext;
+    private static volatile boolean started;
+    private static volatile ConfigurableApplicationContext applicationContext;
+
+    public static boolean isSpringActive() {
+        return applicationContext != null && applicationContext.isActive();
+    }
+
+    public static <T> T getBean(Class<T> type) {
+        return applicationContext.getBean(type);
+    }
 
     public static void main(String[] args) {
         try {
@@ -55,19 +117,138 @@ public class Application {
                     .initializers((ApplicationContextInitializer<GenericApplicationContext>) applicationContext -> {
                         applicationContext.setAllowCircularReferences(false);
                     }).run(args);
-            applicationContext.getBean(DynamicConfigService.class).start();
+            applicationContext.getBean(DynamicConfigDBService.class).start();
             applicationContext.getBean(DirectMemReporter.class).start();
             applicationContext.getBean(GrpcServer.class).start();
             applicationContext.getBean(NettyServer.class).start();
-            started = true;
             log.info("start success cost:{}", System.currentTimeMillis() - start);
-        } catch (Exception e) {
-            log.error("start error", e);
+            started = true;
+            /*
+              增加在jvm关闭前，spring容器关闭后的shutdownHook，串行执行
+              springboot2.5.1为了解决日志系统先于spring容器关闭问题引入该功能
+              SpringApplication.getShutdownHandlers().add(()->{});
+             */
+        } catch (Throwable t) {
+            log.error("start error", t);
+            // 会触发spring的jvm关闭回调钩子
             System.exit(-1);
         }
     }
 
-    public static boolean isSpringActive() {
-        return applicationContext != null && applicationContext.isActive();
+    /*********************************************************************************************************
+     * WebServerFactoryCustomizer设置tomcat除springboot提供的其他参数
+     * 先执行springboot默认的TomcatWebServerFactoryCustomizer设置嵌入式tomcat，再执行用户自定义设置
+     * 自定义设置tomcat参数可以覆盖默认配置，或者配置springboot没开放的设置
+     * https://docs.spring.io/spring-boot/docs/current/reference/html/howto.html#howto.webserver.configure
+     * Spring Boot uses that infrastructure internally to auto-configure the server.
+     * Auto-configured WebServerFactoryCustomizer beans have an order of 0 and will be processed before any user-defined customizers,
+     * unless it has an explicit order that states otherwise.
+     ********************************************************************************************************/
+    @Override
+    public void customize(TomcatServletWebServerFactory factory) {
+        factory.addConnectorCustomizers(connector -> {
+//            不限制参数个数限制，默认10000，超过的参数取不到值
+            connector.setMaxParameterCount(-1);
+//            不限制请求中cookie数量，默认200，超过的话返回400 Bad Request
+            connector.setMaxCookieCount(-1);
+//            https://kb.globalscape.com/Knowledgebase/10691/What-is-the-difference-between-basic-auth-and-formbased-auth
+//            FORM BASED Authentication时使用，存储到session的post消息体最大值，默认4k，一般用不到，因为都自己设计登录
+//            connector.setMaxSavePostSize((int) DataSize.ofKilobytes(4L).toBytes());
+//            如果没有设置spring.mvc.async.request-timeout，则异步servlet的默认超时取各自容器的默认值，tomcat默认30s，负数代表无限
+//            connector.setAsyncTimeout();
+        });
+    }
+
+    /*********************************************************************************************************
+     * WebMvcConfigurer设置拦截器、视图、url统一前缀
+     * https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.developing-web-applications.spring-mvc.auto-configuration
+     ********************************************************************************************************/
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addViewController("/").setViewName("/static/test.html");
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+//        新加拦截器，指定拦截路径和不拦截路径，boot做好了静态资源映射，不用管静态资源
+//        registry.addInterceptor().addPathPatterns().excludePathPatterns();
+    }
+
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+//        设置接口统一前缀，避免每个controller都手动设置前缀。限定包路径，避免springboot自带BasicErrorController受影响
+        configurer.addPathPrefix("/api", HandlerTypePredicate.forBasePackageClass(getClass()));
+    }
+
+//    统一跨域设置，避免每个controller都用过@CrossOrigin
+//    @Override
+//    public void addCorsMappings(CorsRegistry registry) {
+//        registry.addMapping("/api/**");
+//    }
+
+    /*********************************************************************************************************
+     * WebSocketConfigurer配置websocket接口，设置websocket容器参数
+     * https://docs.spring.io/spring-framework/docs/5.3.9/reference/html/web.html#websocket
+     ********************************************************************************************************/
+    @Bean
+    public ServletServerContainerFactoryBean createWebSocketContainer() {
+        ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
+        container.setAsyncSendTimeout(2000L);
+        container.setMaxSessionIdleTimeout(2000L);
+        container.setMaxTextMessageBufferSize(1024 * 1024 * 10);
+        container.setMaxBinaryMessageBufferSize(1024 * 1024 * 10);
+        return container;
+    }
+
+    @Override
+    public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+        registry.addHandler(new TextWebSocketHandler(), "/ws/chat")
+                .addInterceptors(new HttpSessionHandshakeInterceptor())
+                .setAllowedOrigins("*");
+    }
+
+    /*********************************************************************************************************
+     * 拦截器相关配置，被spring管理的用DelegatingFilterProxyRegistrationBean，不用spring管理的用FilterRegistrationBean
+     ********************************************************************************************************/
+    /**
+     * @see cn.laifuzhi.template.filter.CommonFilter
+     */
+    @Bean
+    public DelegatingFilterProxyRegistrationBean registerCommonFilter() {
+        DelegatingFilterProxyRegistrationBean proxyRegistrationBean = new DelegatingFilterProxyRegistrationBean(COMMON_FILTER);
+//        设置拦截路径，不设置默认/*
+//        proxyRegistrationBean.addUrlPatterns("/api/*");
+//        设置执行顺序，越小越先执行，spring自带的characterEncodingFilter/formContentFilter/requestContextFilter都是负的
+        proxyRegistrationBean.setOrder(0);
+//        设置是否支持异步servlet，默认true
+//        proxyRegistrationBean.setAsyncSupported();
+        return proxyRegistrationBean;
+    }
+
+    /**
+     * @see com.alibaba.druid.support.http.StatViewFilter
+     * https://github.com/alibaba/druid/wiki/%E9%85%8D%E7%BD%AE_StatViewServlet%E9%85%8D%E7%BD%AE
+     * https://github.com/alibaba/druid/wiki/%E9%85%8D%E7%BD%AE_StatViewFilter
+     */
+    @Bean
+    public FilterRegistrationBean<StatViewFilter> registerStatViewFilter() {
+        FilterRegistrationBean<StatViewFilter> filterRegistration = new FilterRegistrationBean<>(new StatViewFilter());
+        filterRegistration.setOrder(1);
+        filterRegistration.addUrlPatterns("/druid/*");
+        filterRegistration.addInitParameter(ResourceServlet.PARAM_NAME_USERNAME, "lfz");
+        filterRegistration.addInitParameter(ResourceServlet.PARAM_NAME_PASSWORD, "miao");
+        return filterRegistration;
+    }
+
+    /**
+     * @see com.alibaba.druid.support.http.WebStatFilter
+     * https://github.com/alibaba/druid/wiki/%E9%85%8D%E7%BD%AE_%E9%85%8D%E7%BD%AEWebStatFilter
+     */
+    @Bean
+    public FilterRegistrationBean<WebStatFilter> registerWebStatFilter() {
+        FilterRegistrationBean<WebStatFilter> filterRegistration = new FilterRegistrationBean<>(new WebStatFilter());
+        filterRegistration.setOrder(2);
+//        filterRegistration.addInitParameter(WebStatFilter.PARAM_NAME_EXCLUSIONS, "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*");
+        return filterRegistration;
     }
 }

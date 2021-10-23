@@ -8,9 +8,9 @@ import java.util.Date;
 @Getter
 @Setter
 public class LockInfoPO {
-    private Long id;
+    private long id;
     private String lockKey;
-    private Date expireTime;
+    private long expireTime;
     private Date createTs;
     private Date updateTs;
 }

@@ -5,11 +5,13 @@
         select
         config_key as configKey,
         config_json as configJson,
+        version,
         create_ts as createTs,
         update_ts as updateTs
         from dynamic_config
         <where>
-            config_key=#{configKey} and version &gt; #{version}
+            and config_key=#{configKey}
+            and version &gt; #{version}
         </where>
     </select>
 </mapper>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.laifuzhi.template.dao.SequenceDao">
+    <select id="selectForUpdate" resultType="cn.laifuzhi.template.model.PO.SequencePO" timeout="2">
+        select
+        sequence_key as sequenceKey,
+        sequence,
+        create_ts as createTs,
+        update_ts as updateTs
+        from sequence_info
+        <where>
+            and sequence_key=#{sequenceKey}
+        </where>
+        for update
+    </select>
+
+    <update id="updateSequence">
+        UPDATE sequence_info
+        <set>
+            sequence=#{sequence},
+        </set>
+        <where>
+            and sequence_key=#{sequenceKey}
+        </where>
+        limit 1
+    </update>
+</mapper>

@@ -10,7 +10,7 @@ import java.util.Date;
 public class DynamicConfigPO {
     private String configKey;
     private String configJson;
-    private Long version;
+    private long version;
     private Date createTs;
     private Date updateTs;
 }

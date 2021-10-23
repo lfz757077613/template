@@ -1,0 +1,70 @@
+syntax = "proto3";
+package cn.laifuzhi.template.netty.proto;
+
+option java_outer_classname = "PayloadProto";
+option java_multiple_files = true;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+
+enum ReqType {
+  PING = 0;
+}
+
+enum PushType {
+  SYSTEM_PUSH = 0;
+}
+
+enum RespStatus{
+  SUCCESS = 0;
+  ILLEGAL_PARAM = 1;
+  UNKNOWN_ERROR = 2;
+}
+
+message Req {
+  int64 id = 1;
+  int32 reqType = 2;
+  google.protobuf.Any data = 3;
+}
+
+message Resp {
+  int32 code = 1;
+  string message = 2;
+  int64 reqId = 3;
+  int64 timestamp = 4;
+  google.protobuf.Any data = 5;
+}
+
+message Push {
+  int32 pushType = 1;
+  google.protobuf.Any data = 2;
+}
+
+message Payload {
+  oneof data {
+    Req req = 1;
+    Resp resp = 2;
+    Push push = 3;
+  }
+  //删除字段要同时废弃字段编号和字段名，否则误用的话新老版本有不兼容问题
+  reserved 7, 8;
+  reserved "notUse7", "notUse8";
+  // int64 notUse7 = 7;
+  // int64 notUse8 = 8;
+}
+
+message Ping {
+  string tid = 1;
+  optional string uid = 2;
+  bytes data = 3;
+  google.protobuf.Timestamp dts = 4;
+}
+
+message Pong {
+  string brokerName = 1;
+}
+
+message SystemPush {
+  string pushType = 1;
+  string jsonData = 2;
+}

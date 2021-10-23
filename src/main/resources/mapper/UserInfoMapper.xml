@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.laifuzhi.template.dao.UserInfoDao">
+    <sql id="allFields">
+        id,
+        username,
+        create_ts as createTs,
+        update_ts as updateTs
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_info(username)
+        VALUES(#{username})
+    </insert>
+
+    <select id="selectByUid" resultType="cn.laifuzhi.template.model.PO.UserInfoPO">
+        select
+        <include refid="allFields"/>
+        from user_info
+        <where>
+            and id=#{uid}
+        </where>
+    </select>
+
+    <select id="selectByUsername" resultType="cn.laifuzhi.template.model.PO.UserInfoPO">
+        select
+        <include refid="allFields"/>
+        from user_info
+        <where>
+            and username=#{username}
+        </where>
+    </select>
+
+    <!-- select for share是mysql8新语法，等于select lock in share mode -->
+    <!-- for share/update 在mysql8都支持nowait和skip locked，mariadb/alisql还支持wait n -->
+    <select id="selectForShareByUid" resultType="cn.laifuzhi.template.model.PO.UserInfoPO">
+        select
+        <include refid="allFields"/>
+        from user_info
+        <where>
+            and id=#{uid}
+        </where>
+        for share
+    </select>
+</mapper>

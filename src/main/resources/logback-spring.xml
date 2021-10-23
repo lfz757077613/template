@@ -1,18 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
-    <shutdownHook class="cn.laifuzhi.template.utils.LogbackShutdownHook"/>
-
     <property name="LOG_PATH" value="${user.home}/logs"/>
+
+    <appender name="consoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%X{trace:--} %X{uid:--} ${CONSOLE_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
 
     <appender name="infoAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}/application.log</file>
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>INFO</level>
+            <level>DEBUG</level>
         </filter>
         <encoder>
             <charset>UTF-8</charset>
-            <pattern>%X{trace:--} ${FILE_LOG_PATTERN}</pattern>
+            <pattern>%X{trace:--} %X{uid:--} ${FILE_LOG_PATTERN}</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
             <fileNamePattern>${LOG_PATH}/application.%i.log</fileNamePattern>
@@ -25,8 +30,11 @@
     </appender>
     <appender name="async_infoAppender" class="ch.qos.logback.classic.AsyncAppender">
         <appender-ref ref="infoAppender"/>
+        <!-- 不丢弃日志 -->
         <discardingThreshold>0</discardingThreshold>
+        <!-- 队列长度 -->
         <queueSize>2048</queueSize>
+        <!-- logback关闭时，flush队列写入文件的最大等待时间，0代表无限等待worker.join((long)this.maxFlushTime) -->
         <maxFlushTime>0</maxFlushTime>
     </appender>
 
@@ -37,7 +45,7 @@
         </filter>
         <encoder>
             <charset>UTF-8</charset>
-            <pattern>%X{trace:--} ${FILE_LOG_PATTERN}</pattern>
+            <pattern>%X{trace:--} %X{uid:--} ${FILE_LOG_PATTERN}</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
             <fileNamePattern>${LOG_PATH}/error.%i.log</fileNamePattern>
@@ -55,20 +63,20 @@
         <maxFlushTime>0</maxFlushTime>
     </appender>
 
+    <!-- SizeAndTimeBasedRollingPolicy有1000序号和maxHistory前一天不参与统计的bug -->
     <appender name="myAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}/my.log</file>
         <encoder>
             <charset>UTF-8</charset>
-            <pattern>%X{trace:--} ${FILE_LOG_PATTERN}</pattern>
+            <pattern>%X{trace:--} %X{uid:--} ${FILE_LOG_PATTERN}</pattern>
         </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-            <fileNamePattern>${LOG_PATH}/my.%i.log</fileNamePattern>
-            <minIndex>1</minIndex>
-            <maxIndex>10</maxIndex>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/my.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxHistory>3</maxHistory>
+            <maxFileSize>500MB</maxFileSize>
+            <totalSizeCap>20GB</totalSizeCap>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
         </rollingPolicy>
-        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-            <maxFileSize>2GB</maxFileSize>
-        </triggeringPolicy>
     </appender>
     <appender name="async_myAppender" class="ch.qos.logback.classic.AsyncAppender">
         <appender-ref ref="myAppender"/>
@@ -82,6 +90,9 @@
     </logger>
 
     <root level="INFO">
+        <springProfile name="local">
+            <appender-ref ref="consoleAppender"/>
+        </springProfile>
         <appender-ref ref="async_infoAppender"/>
         <appender-ref ref="async_errorAppender"/>
     </root>

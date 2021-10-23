@@ -5,42 +5,53 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.5.0</version>
+        <version>2.5.6</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>cn.laifuzhi</groupId>
     <artifactId>template</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
     <name>template</name>
     <description>Demo project for Spring Boot</description>
     <properties>
         <java.version>1.8</java.version>
         <classesShadedDir>${project.build.directory}/classes-shaded</classesShadedDir>
         <classesShadedNativeDir>${classesShadedDir}/META-INF/native</classesShadedNativeDir>
-        <shadingPrefix>templateshade</shadingPrefix>
+        <shadingPackagePrefix>template.shade</shadingPackagePrefix>
+        <shadingNettyNativePrefix>template_shade</shadingNettyNativePrefix>
         <shadingJarClassifierName>shade</shadingJarClassifierName>
-        <jarName>${project.build.finalName}-${shadingJarClassifierName}.${project.packaging}</jarName>
+        <shadeJarName>${project.build.finalName}-${shadingJarClassifierName}.${project.packaging}</shadeJarName>
 
         <mybatis-starter.version>2.2.0</mybatis-starter.version>
-        <!-- 不使用mybatis-spring-boot-starter的配置，版本和mybatis-spring-boot-starter里的一致 -->
-<!--        <mysql.version>8.0.23</mysql.version>-->
-<!--        <mybatis-spring.version>2.0.6</mybatis-spring.version>-->
-<!--        <mybatis.version>3.5.7</mybatis.version>-->
-        <redisson.version>3.15.5</redisson.version>
-        <!-- 对应grpc bom中其他组件的使用版本 -->
-        <grpc.version>1.37.1</grpc.version>
-        <protobuf.version>3.12.0</protobuf.version>
+        <!-- 不使用mybatis-spring-boot-starter，但是mybatis和mybatis-spring版本和mybatis-spring-boot-starter里的保持一致 -->
+        <mybatis-spring.version>2.0.6</mybatis-spring.version>
+        <mybatis.version>3.5.7</mybatis.version>
+        <druid.version>1.2.8</druid.version>
+
+        <redisson.version>3.16.3</redisson.version>
+        <rocksdbjni.version>6.22.1.1</rocksdbjni.version>
+        <!-- 保证grpc和etcd使用的版本相同，并处理依赖冲突-->
+        <grpc.version>1.41.0</grpc.version>
+        <jetcd.version>0.5.9</jetcd.version>
         <tomcat.annotation.version>6.0.53</tomcat.annotation.version>
-        <guava.version>30.0-android</guava.version>
+        <!-- grpc自己的依赖版本冲突，官方不想改https://github.com/grpc/grpc-java/issues/8332 -->
+        <protobuf.version>3.17.2</protobuf.version>
+        <error_prone_annotations.version>2.9.0</error_prone_annotations.version>
+        <!-- jetcd自己的guava依赖版本冲突 -->
+        <guava.version>30.1-android</guava.version>
 
         <ahc.version>2.12.3</ahc.version>
         <jjwt.version>0.11.2</jjwt.version>
+        <common-exec.version>1.3</common-exec.version>
+        <common-cli.version>1.4</common-cli.version>
         <commons-collections4.version>4.4</commons-collections4.version>
-        <fastjson.version>1.2.76</fastjson.version>
-        <!-- 插件版本start -->
+        <fastjson.version>1.2.78</fastjson.version>
+        <!-- spring-boot-starter-parent中没设置的插件 -->
         <os-maven-plugin.version>1.6.2</os-maven-plugin.version>
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
         <maven-checkstyle-plugin.version>3.1.2</maven-checkstyle-plugin.version>
+        <dockerfile-maven-plugin.version>1.4.13</dockerfile-maven-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -60,6 +71,22 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>${protobuf.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.errorprone</groupId>
+                <artifactId>error_prone_annotations</artifactId>
+                <version>${error_prone_annotations.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -70,7 +97,15 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -88,34 +123,40 @@
         </dependency>
 
         <!-- db start -->
+        <!--        <dependency>-->
+        <!--            <groupId>org.mybatis.spring.boot</groupId>-->
+        <!--            <artifactId>mybatis-spring-boot-starter</artifactId>-->
+        <!--            <version>${mybatis-starter.version}</version>-->
+        <!--        </dependency>-->
         <dependency>
-            <groupId>org.mybatis.spring.boot</groupId>
-            <artifactId>mybatis-spring-boot-starter</artifactId>
-            <version>${mybatis-starter.version}</version>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <scope>runtime</scope>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.mybatis</groupId>-->
-<!--            <artifactId>mybatis-spring</artifactId>-->
-<!--            <version>${mybatis-spring.version}</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.mybatis</groupId>-->
-<!--            <artifactId>mybatis</artifactId>-->
-<!--            <version>${mybatis.version}</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.springframework</groupId>-->
-<!--            <artifactId>spring-jdbc</artifactId>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>com.zaxxer</groupId>-->
-<!--            <artifactId>HikariCP</artifactId>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>mysql</groupId>-->
-<!--            <artifactId>mysql-connector-java</artifactId>-->
-<!--            <scope>runtime</scope>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>org.mybatis</groupId>
+            <artifactId>mybatis-spring</artifactId>
+            <version>${mybatis-spring.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mybatis</groupId>
+            <artifactId>mybatis</artifactId>
+            <version>${mybatis.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>${druid.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
@@ -124,6 +165,12 @@
             <groupId>org.redisson</groupId>
             <artifactId>redisson</artifactId>
             <version>${redisson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.rocksdb</groupId>
+            <artifactId>rocksdbjni</artifactId>
+            <version>${rocksdbjni.version}</version>
         </dependency>
         <!-- db end -->
 
@@ -151,6 +198,11 @@
             <version>${tomcat.annotation.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>io.etcd</groupId>
+            <artifactId>jetcd-core</artifactId>
+            <version>${jetcd.version}</version>
+        </dependency>
         <!-- grpc end-->
 
         <!-- jjwt start -->
@@ -176,7 +228,19 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <optional>true</optional>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-exec</artifactId>
+            <version>${common-exec.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-cli</groupId>
+            <artifactId>commons-cli</artifactId>
+            <version>${common-cli.version}</version>
         </dependency>
 
         <dependency>
@@ -191,21 +255,21 @@
         </dependency>
 
         <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>${fastjson.version}</version>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>${fastjson.version}</version>
         </dependency>
     </dependencies>
 
     <profiles>
         <profile>
-            <id>dev</id>
+            <id>local</id>
+            <!-- ide中直接运行时，默认使用local -->
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
@@ -224,13 +288,25 @@
     <build>
         <finalName>template</finalName>
 
+        <!-- 覆盖了spring-boot-starter-parent的配置resources配置 -->
         <resources>
             <!-- 由于maven.resources.overwrite默认false，所以会优先profiles下的的配置 -->
             <resource>
                 <directory>src/main/profiles/${package.environment}</directory>
             </resource>
+            <!-- application.yml支持参数@@替换，spring-boot-starter-parent设置了@为占位符 -->
             <resource>
                 <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>application.yml</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>application.yml</exclude>
+                </excludes>
             </resource>
         </resources>
 
@@ -243,7 +319,15 @@
         </extensions>
 
         <plugins>
+            <!-- mvn versions:set -DnewVersion=1.0.3-SNAPSHOT -->
+            <!-- mvn versions:display-dependency-updates -->
+            <!-- mvn versions:display-plugin-updates -->
             <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>${maven-checkstyle-plugin.version}</version>
                 <configuration>
@@ -251,17 +335,41 @@
                     <encoding>UTF-8</encoding>
                     <consoleOutput>true</consoleOutput>
                     <failsOnError>true</failsOnError>
-                    <linkXRef>false</linkXRef>
                 </configuration>
                 <executions>
                     <execution>
-                        <id>validate</id>
                         <phase>validate</phase>
                         <goals>
                             <goal>check</goal>
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <rules>
+                        <banDuplicatePomDependencyVersions/>
+                        <dependencyConvergence>
+                            <uniqueVersions>true</uniqueVersions>
+                        </dependencyConvergence>
+                        <requireMavenVersion>
+                            <version>3.0.5</version>
+                        </requireMavenVersion>
+                        <requireJavaVersion>
+                            <version>1.8.0</version>
+                        </requireJavaVersion>
+                    </rules>
+                </configuration>
             </plugin>
 
             <plugin>
@@ -302,6 +410,7 @@
             </plugin>
 
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
                     <descriptors>
@@ -319,91 +428,132 @@
             </plugin>
 
 
-
             <!-- 打带源码的shade包，多用于客户端打包 -->
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-source-plugin</artifactId>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <phase>package</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>jar-no-fork</goal>-->
-<!--                        </goals>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-shade-plugin</artifactId>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <phase>package</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>shade</goal>-->
-<!--                        </goals>-->
-<!--                        <configuration>-->
-<!--                            <shadedArtifactAttached>true</shadedArtifactAttached>-->
-<!--                            <shadedClassifierName>${shadingJarClassifierName}</shadedClassifierName>-->
-<!--                            <keepDependenciesWithProvidedScope>true</keepDependenciesWithProvidedScope>-->
-<!--                            <createSourcesJar>true</createSourcesJar>-->
-<!--                            <shadeSourcesContent>true</shadeSourcesContent>-->
-<!--                            <artifactSet>-->
-<!--                                <includes>-->
-<!--                                    <include>io.netty:netty-all</include>-->
-<!--                                </includes>-->
-<!--                            </artifactSet>-->
-<!--                            <filters>-->
-<!--                                <filter>-->
-<!--                                    <artifact>io.netty:netty-all</artifact>-->
-<!--                                    <excludes>-->
-<!--                                        <exclude>META-INF/MANIFEST.MF</exclude>-->
-<!--                                    </excludes>-->
-<!--                                </filter>-->
-<!--                            </filters>-->
-<!--                            <relocations>-->
-<!--                                <relocation>-->
-<!--                                    <pattern>io.netty</pattern>-->
-<!--                                    <shadedPattern>${shadingPrefix}.io.netty</shadedPattern>-->
-<!--                                </relocation>-->
-<!--                            </relocations>-->
-<!--                        </configuration>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
+            <!--            <plugin>-->
+            <!--                <groupId>org.apache.maven.plugins</groupId>-->
+            <!--                <artifactId>maven-source-plugin</artifactId>-->
+            <!--                <executions>-->
+            <!--                    <execution>-->
+            <!--                        <phase>package</phase>-->
+            <!--                        <goals>-->
+            <!--                            <goal>jar-no-fork</goal>-->
+            <!--                        </goals>-->
+            <!--                    </execution>-->
+            <!--                </executions>-->
+            <!--            </plugin>-->
 
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-antrun-plugin</artifactId>-->
-<!--                <version>${maven-antrun-plugin.version}</version>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <phase>package</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>run</goal>-->
-<!--                        </goals>-->
-<!--                        <configuration>-->
-<!--                            <target>-->
-<!--                                <unzip dest="${classesShadedDir}">-->
-<!--                                    <fileset dir="${project.build.directory}">-->
-<!--                                        <include name="${jarName}"/>-->
-<!--                                    </fileset>-->
-<!--                                </unzip>-->
-<!--                                <move file="${classesShadedNativeDir}/libnetty_resolver_dns_native_macos_x86_64.jnilib"-->
-<!--                                      tofile="${classesShadedNativeDir}/lib${shadingPrefix}_netty_resolver_dns_native_macos_x86_64.jnilib"/>-->
-<!--                                <move file="${classesShadedNativeDir}/libnetty_transport_native_epoll_aarch_64.so"-->
-<!--                                      tofile="${classesShadedNativeDir}/lib${shadingPrefix}_netty_transport_native_epoll_aarch_64.so"/>-->
-<!--                                <move file="${classesShadedNativeDir}/libnetty_transport_native_epoll_x86_64.so"-->
-<!--                                      tofile="${classesShadedNativeDir}/lib${shadingPrefix}_netty_transport_native_epoll_x86_64.so"/>-->
-<!--                                <move file="${classesShadedNativeDir}/libnetty_transport_native_kqueue_x86_64.jnilib"-->
-<!--                                      tofile="${classesShadedNativeDir}/lib${shadingPrefix}_netty_transport_native_kqueue_x86_64.jnilib"/>-->
-<!--                                <jar destfile="${project.build.directory}/${jarName}" basedir="${classesShadedDir}"/>-->
-<!--                                <delete dir="${classesShadedDir}"/>-->
-<!--                            </target>-->
-<!--                        </configuration>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
+            <!-- logback配置文件不参与打包 -->
+            <!--            <plugin>-->
+            <!--                <groupId>org.apache.maven.plugins</groupId>-->
+            <!--                <artifactId>maven-jar-plugin</artifactId>-->
+            <!--                <version>${maven-jar-plugin.version}</version>-->
+            <!--                <configuration>-->
+            <!--                    <excludes>-->
+            <!--                        <exclude>logback.xml</exclude>-->
+            <!--                    </excludes>-->
+            <!--                </configuration>-->
+            <!--            </plugin>-->
+
+            <!--            <plugin>-->
+            <!--                <groupId>org.apache.maven.plugins</groupId>-->
+            <!--                <artifactId>maven-shade-plugin</artifactId>-->
+            <!--                <executions>-->
+            <!--                    <execution>-->
+            <!--                        <phase>package</phase>-->
+            <!--                        <goals>-->
+            <!--                            <goal>shade</goal>-->
+            <!--                        </goals>-->
+            <!--                    </execution>-->
+            <!--                </executions>-->
+            <!--                <configuration>-->
+            <!-- 只将用到的类shade进去减小包体积，注意有些配置文件中用到的类可能不会被包含，慎用 -->
+            <!--                    <minimizeJar>true</minimizeJar>-->
+            <!-- 额外生成带后缀的shade包，原始的包还在 -->
+            <!--                    <shadedArtifactAttached>true</shadedArtifactAttached>-->
+            <!--                    <shadedClassifierName>${shadingJarClassifierName}</shadedClassifierName>-->
+            <!--                    <keepDependenciesWithProvidedScope>true</keepDependenciesWithProvidedScope>-->
+            <!-- 生成shade之后的jar包的源码 -->
+            <!--                    <createSourcesJar>true</createSourcesJar>-->
+            <!-- 如果不设置true，shade源码包里import的还是依赖jar的类 -->
+            <!--                    <shadeSourcesContent>true</shadeSourcesContent>-->
+            <!-- 只将netty-all jar的代码拷贝到shade后的jar里 -->
+            <!-- 不设置artifactSet默认会将所有scope不是provided、test的包拷贝进去 -->
+            <!-- optional为true也会拷贝，可能以后会改 https://issues.apache.org/jira/browse/MSHADE-392 -->
+            <!--                    <artifactSet>-->
+            <!--                        <includes>-->
+            <!--                            <include>io.netty:netty-all</include>-->
+            <!--                        </includes>-->
+            <!--                    </artifactSet>-->
+            <!--                    <filters>-->
+            <!--                        <filter>-->
+            <!--                            <artifact>io.netty:netty-all</artifact>-->
+            <!--                            <excludes>-->
+            <!--                                <exclude>META-INF/MANIFEST.MF</exclude>-->
+            <!--                            </excludes>-->
+            <!--                        </filter>-->
+            <!--                    </filters>-->
+            <!--                    <relocations>-->
+            <!--                        <relocation>-->
+            <!--                            <pattern>io.netty</pattern>-->
+            <!--                            <shadedPattern>${shadingPackagePrefix}.io.netty</shadedPattern>-->
+            <!--                        </relocation>-->
+            <!--                    </relocations>-->
+            <!--                </configuration>-->
+            <!--            </plugin>-->
+            <!--            <plugin>-->
+            <!--                <groupId>org.apache.maven.plugins</groupId>-->
+            <!--                <artifactId>maven-antrun-plugin</artifactId>-->
+            <!--                <executions>-->
+            <!--                    <execution>-->
+            <!--                        <phase>package</phase>-->
+            <!--                        <goals>-->
+            <!--                            <goal>run</goal>-->
+            <!--                        </goals>-->
+            <!--                    </execution>-->
+            <!--                </executions>-->
+            <!--                <configuration>-->
+            <!--                    <target>-->
+            <!--                        <unzip dest="${classesShadedDir}">-->
+            <!--                            <fileset dir="${project.build.directory}">-->
+            <!--                                <include name="${shadeJarName}"/>-->
+            <!--                            </fileset>-->
+            <!--                        </unzip>-->
+            <!--                        <move file="${classesShadedNativeDir}/libnetty_resolver_dns_native_macos_x86_64.jnilib"-->
+            <!--                              tofile="${classesShadedNativeDir}/lib${shadingNettyNativePrefix}_netty_resolver_dns_native_macos_x86_64.jnilib"/>-->
+            <!--                        <move file="${classesShadedNativeDir}/libnetty_transport_native_epoll_aarch_64.so"-->
+            <!--                              tofile="${classesShadedNativeDir}/lib${shadingNettyNativePrefix}_netty_transport_native_epoll_aarch_64.so"/>-->
+            <!--                        <move file="${classesShadedNativeDir}/libnetty_transport_native_epoll_x86_64.so"-->
+            <!--                              tofile="${classesShadedNativeDir}/lib${shadingNettyNativePrefix}_netty_transport_native_epoll_x86_64.so"/>-->
+            <!--                        <move file="${classesShadedNativeDir}/libnetty_transport_native_kqueue_x86_64.jnilib"-->
+            <!--                              tofile="${classesShadedNativeDir}/lib${shadingNettyNativePrefix}_netty_transport_native_kqueue_x86_64.jnilib"/>-->
+            <!--                        <jar destfile="${project.build.directory}/${shadeJarName}" basedir="${classesShadedDir}"/>-->
+            <!--                        <delete dir="${classesShadedDir}"/>-->
+            <!--                    </target>-->
+            <!--                </configuration>-->
+            <!--            </plugin>-->
+
+            <!-- 构建docker镜像 -->
+            <!--            <plugin>-->
+            <!--                <groupId>com.spotify</groupId>-->
+            <!--                <artifactId>dockerfile-maven-plugin</artifactId>-->
+            <!--                <version>${dockerfile-maven-version}</version>-->
+            <!--                <executions>-->
+            <!--                    <execution>-->
+            <!--                        <id>default</id>-->
+            <!--                        <goals>-->
+            <!--                            <goal>build</goal>-->
+            <!--                            <goal>push</goal>-->
+            <!--                        </goals>-->
+            <!--                    </execution>-->
+            <!--                </executions>-->
+            <!--                <configuration>-->
+            <!--                    <repository>spotify/foobar</repository>-->
+            <!--                    <tag>${project.version}</tag>-->
+            <!--                    <buildArgs>-->
+            <!--                        <JAR_FILE>${project.build.finalName}.${project.packaging}</JAR_FILE>-->
+            <!--                    </buildArgs>-->
+            <!--                </configuration>-->
+            <!--            </plugin>-->
         </plugins>
     </build>
 

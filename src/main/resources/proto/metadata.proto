@@ -1,8 +1,8 @@
 syntax = "proto3";
+package cn.laifuzhi.template.grpc.proto;
 
 option java_outer_classname = "MetadataProto";
 option java_multiple_files = true;
-option java_package = "cn.laifuzhi.template.grpc";
 
 import "google/protobuf/any.proto";
 

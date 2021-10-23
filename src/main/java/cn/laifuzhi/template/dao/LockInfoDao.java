@@ -4,6 +4,7 @@ import cn.laifuzhi.template.model.PO.LockInfoPO;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.Date;
+import java.util.Optional;
 
 public interface LockInfoDao {
     int insert(LockInfoPO lockInfo);
@@ -11,8 +12,8 @@ public interface LockInfoDao {
     int delete(@Param("lockKey") String lockKey, @Param("expireTime") Date expireTime);
 
     int updateExpireTime(@Param("lockKey") String lockKey,
-                         @Param("oldExpectTime") Date oldExpectTime,
-                         @Param("newExpectTime") Date newExpectTime);
+                         @Param("newExpectTime") long newExpectTime,
+                         @Param("oldExpectTime") long oldExpectTime);
 
-    LockInfoPO select(@Param("lockKey") String lockKey);
+    Optional<LockInfoPO> select(@Param("lockKey") String lockKey);
 }

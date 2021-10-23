@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="cn.laifuzhi.template.dao.LockInfoDao">
-    <insert id="insert"  useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert">
         INSERT INTO lock_info(lock_key, expire_time)
         VALUES(#{lockKey}, #{expireTime})
     </insert>
@@ -9,7 +9,7 @@
     <delete id="delete">
         delete from lock_info
         <where>
-            lock_key=#{lockKey}
+            and lock_key=#{lockKey}
             and expire_time=#{expireTime}
         </where>
         limit 1
@@ -21,7 +21,7 @@
             expire_time=#{newExpectTime},
         </set>
         <where>
-            lock_key=#{lockKey}
+            and lock_key=#{lockKey}
             and expire_time=#{oldExpectTime}
         </where>
     </update>
@@ -34,7 +34,7 @@
         update_ts as updateTs
         from lock_info
         <where>
-            lock_key=#{lockKey}
+            and lock_key=#{lockKey}
         </where>
     </select>
 </mapper>
