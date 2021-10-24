@@ -51,14 +51,11 @@ public class NonRestfulController {
         return ResponseEntity.ok().headers(headers).body(bytes);
     }
 
-    // 原封不动返回上传的文件，因为接收连个参数，都要加RequestPart，RequestPart是专门给multipart/form-data请求用的，参数名就是前端传来的参数名
+    // 原封不动返回上传的文件，因为接收两个参数，都要加RequestPart，RequestPart是专门给multipart/form-data请求用的，参数名就是前端传来的参数名
     // 如果file参数传了多个文件，只会受到第一个文件。可以用数组或者list接收
     @PostMapping("upload")
     public ResponseEntity<byte[]> upload(@Valid @RequestPart BaseReq baseReq, @RequestPart MultipartFile file) throws IOException {
-        if (file == null || file.isEmpty()) {
-            return ResponseEntity.ok().build();
-        }
-        HttpHeaders headers = new HttpHeaders();
+         HttpHeaders headers = new HttpHeaders();
         //设置MIME类型
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         headers.setContentDisposition(ContentDisposition.builder(FileUpload.ATTACHMENT).filename(StringUtils.isEmpty(file.getOriginalFilename()) ? "下载文件" : file.getOriginalFilename(), Charsets.UTF_8).build());

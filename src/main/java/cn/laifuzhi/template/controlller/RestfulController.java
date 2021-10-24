@@ -67,7 +67,7 @@ public class RestfulController extends AsyncBaseController{
 
     @APIEntrance
     @GetMapping("get1")
-    public Resp<Map> get1(@Length(max = 2) String str, HttpServletRequest request) throws JsonProcessingException {
+    public Resp<Map> get1(HttpServletRequest request) throws JsonProcessingException {
         for (Enumeration<String> headerNames = request.getHeaderNames(); headerNames.hasMoreElements(); ) {
             String headName = headerNames.nextElement();
             System.out.println(headName + ":" + request.getHeader(headName));
@@ -77,7 +77,8 @@ public class RestfulController extends AsyncBaseController{
         HashMap<String, Object> map = Maps.newHashMap();
         map.put("dd", new Date());
         map.put("aa", Duration.ofDays(2));
-        return Resp.build(BizCodeEnum.OK, map);
+        throw new RuntimeException("123");
+//        return Resp.build(BizCodeEnum.OK, map);
     }
 
 }

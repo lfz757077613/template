@@ -46,7 +46,7 @@ message Payload {
     Resp resp = 2;
     Push push = 3;
   }
-  //删除字段要同时废弃字段编号和字段名，否则误用的话新老版本有不兼容问题
+  // 删除字段要同时废弃字段编号和字段名，否则误用的话新老版本有不兼容问题
   reserved 7, 8;
   reserved "notUse7", "notUse8";
   // int64 notUse7 = 7;

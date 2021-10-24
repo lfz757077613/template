@@ -89,7 +89,7 @@
         <appender-ref ref="async_myAppender"/>
     </logger>
 
-    <root level="INFO">
+    <root level="DEBUG">
         <springProfile name="local">
             <appender-ref ref="consoleAppender"/>
         </springProfile>

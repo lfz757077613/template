@@ -4,11 +4,9 @@ import cn.laifuzhi.template.grpc.GrpcServer;
 import cn.laifuzhi.template.matrix.DirectMemReporter;
 import cn.laifuzhi.template.netty.NettyServer;
 import cn.laifuzhi.template.service.DynamicConfigDBService;
-import cn.laifuzhi.template.utils.CommonRunnable;
 import com.alibaba.druid.support.http.ResourceServlet;
 import com.alibaba.druid.support.http.StatViewFilter;
 import com.alibaba.druid.support.http.WebStatFilter;
-import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -27,13 +25,11 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.core.Ordered;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.method.HandlerTypePredicate;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
@@ -45,30 +41,32 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
 import org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import static cn.laifuzhi.template.utils.Const.FilterName.COMMON_FILTER;
 
 /*
-                       _oo0oo_
-                      o8888888o
-                      88" . "88
-                      (| -_- |)
-                      0\  =  /0
-                    ___/`---'\___
-                  .' \\|     |// '.
-                 / \\|||  :  |||// \
-                / _||||| -:- |||||- \
-               |   | \\\  -  /// |   |
-               | \_|  ''\---/''  |_/ |
-               \  .-\__  '-'  ___/-. /
-             ___'. .'  /--.--\  `. .'___
-          ."" '<  `.___\_<|>_/___.' >' "".
-         | | :  `- \`.;`\ _ /`;.`/ - ` : | |
-         \  \ `_.   \_ __\ /__ _/   .-` /  /
-     =====`-.____`.___ \_____/___.-`___.-'=====
-                       `=---='
-     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-               佛祖保佑         永无BUG
+                   _oo0oo_
+                  o8888888o
+                  88" . "88
+                  (| -_- |)
+                  0\  =  /0
+                ___/'---'\___
+              .' \ |     | / '.
+             / \||||  :  ||||/ \
+            / _||||| -:- |||||- \
+           |   | \ \  -  / / |   |
+           | \_|  ''\---/''  |_/ |
+           \  .-\__  '-'  __/-.  /
+         ___'. .'  /--.--\  '. .'___
+      ."" '<  '.___\_<|>_/___.'  >' "".
+     | | : ' - \'.:'\ _ /':.'/ - ' : | |
+     \  \ '-.   \_ __\ /__ _/   .-' /  /
+  ====='-.___'-.___\_____/___.-'___.-'=====
+                   '=---='
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+           佛祖保佑         永无BUG
 */
 
 /**
