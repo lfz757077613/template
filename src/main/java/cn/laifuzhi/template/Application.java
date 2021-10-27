@@ -74,6 +74,8 @@ import static cn.laifuzhi.template.utils.Const.FilterName.COMMON_FILTER;
  * Mapping filters: characterEncodingFilter urls=[/*] order=-2147483648, formContentFilter urls=[/*] order=-9900, requestContextFilter urls=[/*] order=-105
  * spring的dispatcherServlet的url-pattern是/不是/*，仅仅替换了servlet容器的默认servlet
  * Mapping servlets: dispatcherServlet urls=[/]
+ * @EnableWebSocket和@EnableScheduling 同时使用会造成spring.task.schedule*设置失效(TaskSchedulingAutoConfiguration不自动生成ThreadPoolTaskScheduler)
+ * ScheduledTaskRegistrar只会使用localExecutor
  */
 @Slf4j
 @EnableWebSocket
