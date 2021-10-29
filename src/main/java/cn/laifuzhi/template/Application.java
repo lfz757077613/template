@@ -7,8 +7,12 @@ import cn.laifuzhi.template.service.DynamicConfigDBService;
 import com.alibaba.druid.support.http.ResourceServlet;
 import com.alibaba.druid.support.http.StatViewFilter;
 import com.alibaba.druid.support.http.WebStatFilter;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.util.internal.PlatformDependent;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
@@ -28,8 +32,6 @@ import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.web.method.HandlerTypePredicate;
-import org.springframework.web.servlet.HandlerInterceptor;
-import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
@@ -41,8 +43,9 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
 import org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.nio.ByteBuffer;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static cn.laifuzhi.template.utils.Const.FilterName.COMMON_FILTER;
 
@@ -100,6 +103,8 @@ public class Application implements WebServerFactoryCustomizer<TomcatServletWebS
     @Getter
     private static volatile boolean started;
     private static volatile ConfigurableApplicationContext applicationContext;
+    private static final ReentrantLock LOCK = new ReentrantLock();
+    private static final Condition STOP = LOCK.newCondition();
 
     public static boolean isSpringActive() {
         return applicationContext != null && applicationContext.isActive();
@@ -127,7 +132,20 @@ public class Application implements WebServerFactoryCustomizer<TomcatServletWebS
               增加在jvm关闭前，spring容器关闭后的shutdownHook，串行执行
               springboot2.5.1为了解决日志系统先于spring容器关闭问题引入该功能
               SpringApplication.getShutdownHandlers().add(()->{});
+              SpringApplicationShutdownHook中注册jvm关闭钩子，先关闭spring容器再按序执行shutdownHandler
              */
+//            避免main线程退出
+            LOCK.lock();
+            SpringApplication.getShutdownHandlers().add(() -> {
+//                LoggingApplicationListener.registerShutdownHookIfNecessary中增加了关闭日志系统的shutdownHandler
+//                所以执行到自定义shutdownHandler时，spring容器和日志系统已经关闭了
+                LOCK.lock();
+                STOP.signal();
+                LOCK.unlock();
+            });
+            STOP.awaitUninterruptibly();
+            // 之后无法使用spring容器和logback
+            LOCK.unlock();
         } catch (Throwable t) {
             log.error("start error", t);
             // 会触发spring的jvm关闭回调钩子

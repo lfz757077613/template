@@ -34,10 +34,11 @@ server:
 #       allow-caching: true
 #      没有默认值，tomcat默认ttl5秒，org.apache.catalina.webresources.Cache
 #      cache-ttl: 5s
-
 spring:
   profiles:
     active: @package.environment@
+  lifecycle:
+    timeout-per-shutdown-phase: 5m
   application:
     name: template
   output:
