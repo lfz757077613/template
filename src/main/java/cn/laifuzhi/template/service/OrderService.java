@@ -26,6 +26,7 @@ public class OrderService {
     @Resource(name = "transactionTemplate1")
     private TransactionTemplate transactionTemplate;
 
+//    @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW, transactionManager = "transactionManager1")
     public BizCodeEnum saveOrder(OrderInfoPO orderInfo) {
         try {
             return transactionTemplate.execute(status -> {

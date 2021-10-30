@@ -85,10 +85,12 @@
         <maxFlushTime>0</maxFlushTime>
     </appender>
 
-    <logger name="myLogger" additivity="false" level="INFO">
+    <!-- logger的name指的是LoggerFactory.getLogger("name")，可以用根据包名前缀匹配 -->
+    <logger name="MY_LOGGER" additivity="false" level="INFO">
         <appender-ref ref="async_myAppender"/>
     </logger>
 
+    <!-- root的name是ROOT，LoggerContext中可以看到 -->
     <root level="DEBUG">
         <springProfile name="local">
             <appender-ref ref="consoleAppender"/>
