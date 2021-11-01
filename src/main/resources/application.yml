@@ -85,7 +85,7 @@ spring:
 
   mail:
 #    设置为true会使用MailSenderValidatorAutoConfiguration，spring启动时验证邮件服务是否可以连接
-    test-connection: true
+#    test-connection: true
 #    default-encoding默认utf8
 #    default-encoding: utf-8
 #    默认protocol是smtp
@@ -95,8 +95,8 @@ spring:
     password: 你自己的密码
 #    javaMailProperties可以参考 http://www.websina.com/bugzero/kb/javamail-properties.html
     properties:
-#      打印邮件日志
-      mail.debug: true
+#      打印邮件日志到标准输出
+#      mail.debug: true
       mail.smtp.auth: true
       mail.smtp.connectiontimeout: 5000
       mail.smtp.timeout: 3000

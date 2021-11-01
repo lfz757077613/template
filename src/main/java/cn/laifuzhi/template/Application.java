@@ -7,10 +7,6 @@ import cn.laifuzhi.template.service.DynamicConfigDBService;
 import com.alibaba.druid.support.http.ResourceServlet;
 import com.alibaba.druid.support.http.StatViewFilter;
 import com.alibaba.druid.support.http.WebStatFilter;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.util.internal.PlatformDependent;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -43,7 +39,6 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
 import org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -77,6 +72,7 @@ import static cn.laifuzhi.template.utils.Const.FilterName.COMMON_FILTER;
  * Mapping filters: characterEncodingFilter urls=[/*] order=-2147483648, formContentFilter urls=[/*] order=-9900, requestContextFilter urls=[/*] order=-105
  * spring的dispatcherServlet的url-pattern是/不是/*，仅仅替换了servlet容器的默认servlet
  * Mapping servlets: dispatcherServlet urls=[/]
+ *
  * @EnableWebSocket和@EnableScheduling 同时使用会造成spring.task.schedule*设置失效(TaskSchedulingAutoConfiguration不自动生成ThreadPoolTaskScheduler)
  * ScheduledTaskRegistrar只会使用localExecutor
  */
@@ -100,57 +96,60 @@ import static cn.laifuzhi.template.utils.Const.FilterName.COMMON_FILTER;
 //@MapperScan("cn.laifuzhi.template.dao")
 @PropertySource(value = {"classpath:conf.properties"}, encoding = "UTF-8")
 public class Application implements WebServerFactoryCustomizer<TomcatServletWebServerFactory>, WebMvcConfigurer, WebSocketConfigurer {
-    @Getter
-    private static volatile boolean started;
-    private static volatile ConfigurableApplicationContext applicationContext;
-    private static final ReentrantLock LOCK = new ReentrantLock();
-    private static final Condition STOP = LOCK.newCondition();
-
-    public static boolean isSpringActive() {
-        return applicationContext != null && applicationContext.isActive();
-    }
-
-    public static <T> T getBean(Class<T> type) {
-        return applicationContext.getBean(type);
-    }
+    private static volatile boolean STARTED;
+    private static volatile ConfigurableApplicationContext CONTEXT;
 
     public static void main(String[] args) {
         try {
             long start = System.currentTimeMillis();
             // 手动禁止循环依赖，springboot默认已经禁止了同名bean并提供了配置项，但是没提供循环依赖的配置项
-            applicationContext = new SpringApplicationBuilder(Application.class)
+            CONTEXT = new SpringApplicationBuilder(Application.class)
                     .initializers((ApplicationContextInitializer<GenericApplicationContext>) applicationContext -> {
                         applicationContext.setAllowCircularReferences(false);
                     }).run(args);
-            applicationContext.getBean(DynamicConfigDBService.class).start();
-            applicationContext.getBean(DirectMemReporter.class).start();
-            applicationContext.getBean(GrpcServer.class).start();
-            applicationContext.getBean(NettyServer.class).start();
+            getBean(DynamicConfigDBService.class).start();
+            getBean(DirectMemReporter.class).start();
+            getBean(GrpcServer.class).start();
+            getBean(NettyServer.class).start();
             log.info("start success cost:{}", System.currentTimeMillis() - start);
-            started = true;
+            STARTED = true;
             /*
               增加在jvm关闭前，spring容器关闭后的shutdownHook，串行执行
               springboot2.5.1为了解决日志系统先于spring容器关闭问题引入该功能
               SpringApplication.getShutdownHandlers().add(()->{});
               SpringApplicationShutdownHook中注册jvm关闭钩子，先关闭spring容器再按序执行shutdownHandler
              */
-//            避免main线程退出
-            LOCK.lock();
+//            避免main线程退出，有spring-boot-starter-web时可以不用，web容器有常驻线程
+            ReentrantLock lock = new ReentrantLock();
+            Condition stopCondition = lock.newCondition();
+            lock.lock();
             SpringApplication.getShutdownHandlers().add(() -> {
 //                LoggingApplicationListener.registerShutdownHookIfNecessary中增加了关闭日志系统的shutdownHandler
 //                所以执行到自定义shutdownHandler时，spring容器和日志系统已经关闭了
-                LOCK.lock();
-                STOP.signal();
-                LOCK.unlock();
+                lock.lock();
+                stopCondition.signal();
+                lock.unlock();
             });
-            STOP.awaitUninterruptibly();
+            stopCondition.awaitUninterruptibly();
             // 之后无法使用spring容器和logback
-            LOCK.unlock();
+            lock.unlock();
         } catch (Throwable t) {
             log.error("start error", t);
             // 会触发spring的jvm关闭回调钩子
             System.exit(-1);
         }
+    }
+
+    public static boolean isStarted() {
+        return STARTED;
+    }
+
+    public static boolean isSpringActive() {
+        return CONTEXT != null && CONTEXT.isActive();
+    }
+
+    public static <T> T getBean(Class<T> type) {
+        return CONTEXT.getBean(type);
     }
 
     /*********************************************************************************************************
