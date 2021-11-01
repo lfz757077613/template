@@ -82,16 +82,26 @@ spring:
 #      encoding: utf-8
 #      schema-locations: classpath:dbInit.sql
 #      mode: always
+
   mail:
+#    设置为true会使用MailSenderValidatorAutoConfiguration，spring启动时验证邮件服务是否可以连接
+    test-connection: true
+#    default-encoding默认utf8
+#    default-encoding: utf-8
+#    默认protocol是smtp
+#    protocol: smtp
     host: smtp.qq.com
     username: 757077613@qq.com
     password: 你自己的密码
+#    javaMailProperties可以参考 http://www.websina.com/bugzero/kb/javamail-properties.html
     properties:
+#      打印邮件日志
       mail.debug: true
       mail.smtp.auth: true
-      mail.smtp.connectiontimeout: 2000
-      mail.smtp.timeout: 2000
-      mail.smtp.writetimeout: 2000
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 3000
+      mail.smtp.writetimeout: 5000
+
 #      默认不等待，直接shutdownNow，仅仅作为触发器，不需要等待
   task:
     scheduling:
@@ -114,7 +124,7 @@ template:
   idleTimeout: 2m
   maxLifeTime: 5m
   maximumPoolSize: 10
-  # sql默认超时时间，想个性配置可以在mapper文件中单独配置timeout
+# sql默认超时时间，想个性配置可以在mapper文件中单独配置timeout
   defaultDBTimeout: 10s
 #  设置socketTimeout和connectTimeout避免长时间阻塞到os socket超时
 #  数据库sql超时时间由最底层的socketTimeout、mybatis默认statement超时、mapper中指定sql的超时共同决定，socketTimeout是最底层的，应该设置的尽量大
