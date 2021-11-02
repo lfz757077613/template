@@ -20,7 +20,7 @@ public final class MailClient {
             message.setTo("757077613@qq.com");
             message.setSubject("新用户注册：" + content);
             message.setText("欢迎：" + content);
-            //发送邮件
+            // 发送邮件，JavaMailSender类似http1.0，都是短连接
             sender.send(message);
 //            MimeMessage mimeMessage = sender.createMimeMessage();
 //            MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage);

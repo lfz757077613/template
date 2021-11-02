@@ -1,5 +1,6 @@
 package cn.laifuzhi.template;
 
+import cn.laifuzhi.template.conf.StaticConfig;
 import cn.laifuzhi.template.grpc.GrpcServer;
 import cn.laifuzhi.template.matrix.DirectMemReporter;
 import cn.laifuzhi.template.netty.NettyServer;
@@ -39,6 +40,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
 import org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor;
 
+import javax.annotation.Resource;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -98,6 +100,8 @@ import static cn.laifuzhi.template.utils.Const.FilterName.COMMON_FILTER;
 public class Application implements WebServerFactoryCustomizer<TomcatServletWebServerFactory>, WebMvcConfigurer, WebSocketConfigurer {
     private static volatile boolean STARTED;
     private static volatile ConfigurableApplicationContext CONTEXT;
+    @Resource
+    private StaticConfig staticConfig;
 
     public static void main(String[] args) {
         try {

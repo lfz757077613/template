@@ -41,9 +41,10 @@ import java.util.Map;
  */
 @Configuration
 public class MysqlConfig {
+    private StaticConfig config;
     // @Bean的实例名就是方法名，并且会自动执行close、shutdown的public无参方法
 //    @Bean
-    public HikariDataSource dataSource(StaticConfig config) {
+    public HikariDataSource dataSource() {
 //       https://github.com/brettwooldridge/HikariCP/tree/dev
         HikariDataSource metadataDataSource = new HikariDataSource();
         metadataDataSource.setJdbcUrl(config.getMetadataDBUrl());
@@ -64,7 +65,7 @@ public class MysqlConfig {
 
     // java -cp druid-1.2.6.jar com.alibaba.druid.filter.config.ConfigTools root 获得加密后的密码和公私钥
     @Bean
-    public DruidDataSource dataSource1(StaticConfig config) {
+    public DruidDataSource dataSource1() {
         // druid连接池默认testOnBorrow false，testOnReturn false, testOnIdle true
         // mysql的valid是ping不是执行sql，并且默认valid timeout是1s
         DruidDataSource metadataDataSource = new DruidDataSource();
@@ -132,7 +133,7 @@ public class MysqlConfig {
 
     // DataSourceInitializer实现了InitializingBean，spring实例化该对象后，afterPropertiesSet中会执行初始化sql
     @Bean
-    public DataSourceInitializer dataSourceInitializer1(DataSource dataSource1, StaticConfig config) {
+    public DataSourceInitializer dataSourceInitializer1(DataSource dataSource1) {
         DataSourceInitializer dataSourceInitializer = new DataSourceInitializer();
         dataSourceInitializer.setDataSource(dataSource1);
         ResourceDatabasePopulator resourceDatabasePopulator = new ResourceDatabasePopulator();
@@ -145,7 +146,7 @@ public class MysqlConfig {
     // mybatis需要等数据库初始化后再初始化
     @Bean
     @DependsOn("dataSourceInitializer1")
-    public SqlSessionFactory sqlSessionFactory1(DataSource dataSource1, StaticConfig config) throws Exception {
+    public SqlSessionFactory sqlSessionFactory1(DataSource dataSource1) throws Exception {
         SqlSessionFactoryBean factoryBean = new SqlSessionFactoryBean();
         org.apache.ibatis.session.Configuration configuration = new org.apache.ibatis.session.Configuration();
         configuration.setDefaultStatementTimeout((int) config.getDefaultDBTimeout().getSeconds());

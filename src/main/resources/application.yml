@@ -61,6 +61,7 @@ spring:
       # 异步servlet的默认超时时间，负数代表无限
       request-timeout: 10s
   jackson:
+#    默认aways返回所有字段，包含null
 #    default-property-inclusion: non_null
     serialization:
       WRITE_DATES_AS_TIMESTAMPS: true
