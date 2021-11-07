@@ -18,11 +18,11 @@
     <update id="updateExpireTime">
         UPDATE lock_info
         <set>
-            expire_time=#{newExpectTime},
+            expire_time=#{newExpireTime},
         </set>
         <where>
             and lock_key=#{lockKey}
-            and expire_time=#{oldExpectTime}
+            and expire_time=#{oldExpireTime}
         </where>
     </update>
 

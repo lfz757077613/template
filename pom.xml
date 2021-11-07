@@ -47,6 +47,7 @@
         <common-cli.version>1.4</common-cli.version>
         <commons-collections4.version>4.4</commons-collections4.version>
         <fastjson.version>1.2.78</fastjson.version>
+        <pf4j.version>3.6.0</pf4j.version>
         <!-- spring-boot-starter-parent中没设置的插件 -->
         <os-maven-plugin.version>1.6.2</os-maven-plugin.version>
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
@@ -260,6 +261,13 @@
             <artifactId>fastjson</artifactId>
             <version>${fastjson.version}</version>
         </dependency>
+
+        <!-- api和plugin中都是provided，plugin中api也是provided，plugin需要将依赖打到jar里，否则使用的是容器中的依赖，如果容器中也没有就会报错 -->
+        <dependency>
+            <groupId>org.pf4j</groupId>
+            <artifactId>pf4j</artifactId>
+            <version>${pf4j.version}</version>
+        </dependency>
     </dependencies>
 
     <profiles>
@@ -396,6 +404,17 @@
             </plugin>
 
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>healthCheck.tmp</exclude>
+                        <exclude>plugins/*</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
@@ -429,7 +448,6 @@
                     </execution>
                 </executions>
             </plugin>
-
 
             <!-- 打带源码的shade包，多用于客户端打包 -->
             <!--            <plugin>-->

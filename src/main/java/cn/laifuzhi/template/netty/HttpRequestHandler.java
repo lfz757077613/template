@@ -27,14 +27,14 @@ public class HttpRequestHandler extends SimpleChannelInboundHandler<FullHttpRequ
 
     @PostConstruct
     private void init() throws IOException {
-        healthCheckFile = Paths.get(new ApplicationHome(getClass()).getDir().getCanonicalPath(), "healthCheck").toFile();
+        healthCheckFile = Paths.get(new ApplicationHome(getClass()).getDir().getCanonicalPath(), "healthCheck.tmp").toFile();
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest req) throws Exception {
         String uri = req.uri();
         log.info("http receive uri:{}", uri);
-        if (!StringUtils.equals("/healthCheck", uri)) {
+        if (!StringUtils.equals("/healthCheck.tmp", uri)) {
             ctx.close();
             return;
         }

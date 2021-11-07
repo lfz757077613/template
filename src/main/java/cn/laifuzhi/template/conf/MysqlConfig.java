@@ -1,8 +1,6 @@
 package cn.laifuzhi.template.conf;
 
-import com.alibaba.druid.filter.Filter;
 import com.alibaba.druid.filter.config.ConfigFilter;
-import com.alibaba.druid.filter.config.ConfigTools;
 import com.alibaba.druid.filter.logging.Slf4jLogFilter;
 import com.alibaba.druid.filter.stat.StatFilter;
 import com.alibaba.druid.pool.DruidDataSource;
@@ -13,7 +11,6 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.mapper.MapperScannerConfigurer;
-import org.redisson.misc.Hash;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
@@ -21,18 +18,12 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.init.DataSourceInitializer;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
-import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import javax.annotation.Resource;
 import javax.sql.DataSource;
 import java.nio.charset.StandardCharsets;
-import java.security.PublicKey;
-import java.sql.SQLException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * 多数据源手动配置
@@ -41,10 +32,11 @@ import java.util.Map;
  */
 @Configuration
 public class MysqlConfig {
+    @Resource
     private StaticConfig config;
     // @Bean的实例名就是方法名，并且会自动执行close、shutdown的public无参方法
 //    @Bean
-    public HikariDataSource dataSource() {
+    public HikariDataSource dataSource(StaticConfig config) {
 //       https://github.com/brettwooldridge/HikariCP/tree/dev
         HikariDataSource metadataDataSource = new HikariDataSource();
         metadataDataSource.setJdbcUrl(config.getMetadataDBUrl());
@@ -65,7 +57,7 @@ public class MysqlConfig {
 
     // java -cp druid-1.2.6.jar com.alibaba.druid.filter.config.ConfigTools root 获得加密后的密码和公私钥
     @Bean
-    public DruidDataSource dataSource1() {
+    public DruidDataSource dataSource1(StaticConfig config) {
         // druid连接池默认testOnBorrow false，testOnReturn false, testOnIdle true
         // mysql的valid是ping不是执行sql，并且默认valid timeout是1s
         DruidDataSource metadataDataSource = new DruidDataSource();
@@ -133,7 +125,7 @@ public class MysqlConfig {
 
     // DataSourceInitializer实现了InitializingBean，spring实例化该对象后，afterPropertiesSet中会执行初始化sql
     @Bean
-    public DataSourceInitializer dataSourceInitializer1(DataSource dataSource1) {
+    public DataSourceInitializer dataSourceInitializer1(StaticConfig config, DataSource dataSource1) {
         DataSourceInitializer dataSourceInitializer = new DataSourceInitializer();
         dataSourceInitializer.setDataSource(dataSource1);
         ResourceDatabasePopulator resourceDatabasePopulator = new ResourceDatabasePopulator();
@@ -146,7 +138,7 @@ public class MysqlConfig {
     // mybatis需要等数据库初始化后再初始化
     @Bean
     @DependsOn("dataSourceInitializer1")
-    public SqlSessionFactory sqlSessionFactory1(DataSource dataSource1) throws Exception {
+    public SqlSessionFactory sqlSessionFactory1(StaticConfig config, DataSource dataSource1) throws Exception {
         SqlSessionFactoryBean factoryBean = new SqlSessionFactoryBean();
         org.apache.ibatis.session.Configuration configuration = new org.apache.ibatis.session.Configuration();
         configuration.setDefaultStatementTimeout((int) config.getDefaultDBTimeout().getSeconds());

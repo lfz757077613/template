@@ -47,6 +47,7 @@ spring:
       enabled: never
   main:
     banner-mode: log
+    register-shutdown-hook:
   servlet:
     multipart:
       location: ${user.home}/upload

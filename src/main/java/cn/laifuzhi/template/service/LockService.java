@@ -59,8 +59,8 @@ public class LockService {
         }
     }
 
-    public void release(String lockKey, Date expectExpireTime) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(lockKey) && expectExpireTime != null);
+    public void release(String lockKey, long expectExpireTime) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(lockKey));
         try {
             transactionTemplate4NotSupport.executeWithoutResult(status -> {
                 boolean result = lockInfoDao.delete(lockKey, expectExpireTime) > 0;

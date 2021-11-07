@@ -9,11 +9,11 @@ import java.util.Optional;
 public interface LockInfoDao {
     int insert(LockInfoPO lockInfo);
 
-    int delete(@Param("lockKey") String lockKey, @Param("expireTime") Date expireTime);
+    int delete(@Param("lockKey") String lockKey, @Param("expireTime") long expireTime);
 
     int updateExpireTime(@Param("lockKey") String lockKey,
-                         @Param("newExpectTime") long newExpectTime,
-                         @Param("oldExpectTime") long oldExpectTime);
+                         @Param("newExpireTime") long newExpireTime,
+                         @Param("oldExpireTime") long oldExpireTime);
 
     Optional<LockInfoPO> select(@Param("lockKey") String lockKey);
 }

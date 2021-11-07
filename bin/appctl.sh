@@ -12,7 +12,7 @@ export APP_HOME=${HOME}/${APP_NAME}
 export JAVA=java
 export LOG_PATH=${HOME}/logs
 export HEALTH_CHECK_PATH=healthCheck
-export HEALTH_CHECK_FILE=healthCheck
+export HEALTH_CHECK_FILE=healthCheck.tmp
 
 mkdir -p LOG_PATH
 

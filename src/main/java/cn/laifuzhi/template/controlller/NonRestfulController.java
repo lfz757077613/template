@@ -30,7 +30,7 @@ public class NonRestfulController {
     private File healthCheckFile;
     @PostConstruct
     private void init() throws IOException {
-        healthCheckFile = Paths.get(new ApplicationHome(getClass()).getDir().getCanonicalPath(), "healthCheck").toFile();
+        healthCheckFile = Paths.get(new ApplicationHome(getClass()).getDir().getCanonicalPath(), "healthCheck.tmp").toFile();
     }
 
     @GetMapping("healthCheck")

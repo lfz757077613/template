@@ -31,8 +31,13 @@
                 <!-- 复制动态配置文件 -->
                 <include>dynamicConf.json</include>
                 <!-- 复制健康检查文件 -->
-                <include>healthCheck</include>
+                <include>healthCheck.tmp</include>
             </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>${project.build.outputDirectory}/plugins</directory>
+            <outputDirectory>/plugins</outputDirectory>
         </fileSet>
 
         <fileSet>
