@@ -43,6 +43,5 @@ Thumbs.db
 *.cache
 *.diff
 *.patch
-*.tmp
 
 druid-password.properties
