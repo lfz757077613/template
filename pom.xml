@@ -296,25 +296,25 @@
         <resources>
             <!-- maven默认不会将src/main/java下除了代码之外的文件编译到target中 -->
             <resource>
-                <directory>${basedir}/src/main/java</directory>
+                <directory>${project.basedir}/src/main/java</directory>
                 <includes>
                     <include>**/*.properties</include>
                 </includes>
             </resource>
             <!-- 由于maven.resources.overwrite默认false，所以会优先profiles下的的配置 -->
             <resource>
-                <directory>${basedir}/src/main/profiles/${package.environment}</directory>
+                <directory>${project.basedir}/src/main/profiles/${package.environment}</directory>
             </resource>
             <!-- application.yml支持参数@@替换，spring-boot-starter-parent设置了@为占位符 -->
             <resource>
-                <directory>${basedir}/src/main/resources</directory>
+                <directory>${project.basedir}/src/main/resources</directory>
                 <filtering>true</filtering>
                 <includes>
                     <include>application.yml</include>
                 </includes>
             </resource>
             <resource>
-                <directory>${basedir}/src/main/resources</directory>
+                <directory>${project.basedir}/src/main/resources</directory>
                 <excludes>
                     <exclude>application.yml</exclude>
                 </excludes>

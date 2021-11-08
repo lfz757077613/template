@@ -1,0 +1,33 @@
+<assembly>
+    <formats>
+        <format>tar.gz</format>
+    </formats>
+    <fileSets>
+        <fileSet>
+            <directory>${project.basedir}/src/main/resources</directory>
+            <outputDirectory>/conf</outputDirectory>
+            <includes>
+                <include>**/*.xml</include>
+            </includes>
+            <filtered>true</filtered>
+        </fileSet>
+    </fileSets>
+    <dependencySets>
+        <dependencySet>
+            <unpack>false</unpack>
+            <excludes>
+                <exclude>org.springframework:spring-context</exclude>
+            </excludes>
+            <outputDirectory>/lib</outputDirectory>
+            <useProjectArtifact>false</useProjectArtifact><!-- lib里面不包含当前project打包成的jar -->
+            <useTransitiveFiltering>true</useTransitiveFiltering><!-- 只打包直接依赖的jar -->
+        </dependencySet>
+        <dependencySet>
+            <unpack>false</unpack>
+            <includes>
+                <include></include>
+            </includes>
+            <outputDirectory>/</outputDirectory>
+        </dependencySet>
+    </dependencySets>
+</assembly>
