@@ -32,8 +32,6 @@ import java.nio.charset.StandardCharsets;
  */
 @Configuration
 public class MysqlConfig {
-    @Resource
-    private StaticConfig config;
     // @Bean的实例名就是方法名，并且会自动执行close、shutdown的public无参方法
 //    @Bean
     public HikariDataSource dataSource(StaticConfig config) {
