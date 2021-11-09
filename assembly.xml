@@ -1,3 +1,4 @@
+<!-- http://maven.apache.org/plugins/maven-assembly-plugin/assembly.html#class_dependencySet -->
 <assembly>
     <!--最终包名为${project.build.finalName}-assembly.tgz-->
     <id>assembly</id>

@@ -23,7 +23,7 @@ public class PluginService {
         pluginManager = new DefaultPluginManager(Paths.get(new ApplicationHome(getClass()).getDir().getCanonicalPath(), DEFAULT_PLUGINS_DIR));
         pluginManager.loadPlugins();
         pluginManager.startPlugins();
-//        每次执行getExtensions获取的都是新的extension对象，可以使用SingletonExtensionFactory，不过没必要
+//        每次执行getExteURLClassLoadernsions获取的都是新的extension对象，可以使用SingletonExtensionFactory，不过没必要
         extensions = pluginManager.getExtensions(Object.class);
     }
 
