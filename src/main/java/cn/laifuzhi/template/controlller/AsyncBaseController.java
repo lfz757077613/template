@@ -25,7 +25,7 @@ public class AsyncBaseController {
             1,
             10, TimeUnit.SECONDS,
             new SynchronousQueue<>(),
-            new CustomizableThreadFactory("MyScheduler")){{
+            new CustomizableThreadFactory(AsyncBaseController.class.getSimpleName())){{
         allowCoreThreadTimeOut(true);
     }};
 

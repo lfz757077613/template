@@ -31,7 +31,7 @@ public class MyScheduler {
                 10,
                 10, TimeUnit.MINUTES,
                 new SynchronousQueue<>(),
-                new CustomizableThreadFactory("MyScheduler"));
+                new CustomizableThreadFactory(getClass().getSimpleName()));
         executorService.allowCoreThreadTimeOut(true);
     }
 

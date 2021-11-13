@@ -35,6 +35,12 @@ server:
 #      没有默认值，tomcat默认ttl5秒，org.apache.catalina.webresources.Cache
 #      cache-ttl: 5s
 spring:
+#  不支持设置字符集，properties文件默认8859-1，使用中文需要用unicode，yml默认使用utf8
+#  https://github.com/spring-projects/spring-boot/issues/28663
+#  config:
+#    import:
+#      - optional:classpath:centerConfig.properties
+#      - classpath:regionConfig.yml
   profiles:
     active: @package.environment@
   lifecycle:

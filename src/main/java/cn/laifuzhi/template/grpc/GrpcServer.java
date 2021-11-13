@@ -36,7 +36,7 @@ public class GrpcServer {
                 config.getGrpcThreadCount(),
                 60L, TimeUnit.SECONDS,
                 new ArrayBlockingQueue<>(config.getGrpcThreadQueue()),
-                new CustomizableThreadFactory("GrpcServer"));
+                new CustomizableThreadFactory(getClass().getSimpleName()));
         executorService.allowCoreThreadTimeOut(true);
 
         server = NettyServerBuilder.forPort(config.getGrpcPort())

@@ -76,6 +76,8 @@ import static cn.laifuzhi.template.utils.Const.FilterName.COMMON_FILTER;
  *
  * @EnableWebSocket和@EnableScheduling 同时使用会造成spring.task.schedule*设置失效(TaskSchedulingAutoConfiguration不自动生成ThreadPoolTaskScheduler)
  * ScheduledTaskRegistrar只会使用localExecutor
+ * @PostConstruct 初始化成员变量和线程可见性的关系
+ * https://stackoverflow.com/questions/49742762/spring-instance-variable-visibility-in-new-thread-started-from-postconstruct
  */
 @Slf4j
 @EnableWebSocket
@@ -95,6 +97,7 @@ import static cn.laifuzhi.template.utils.Const.FilterName.COMMON_FILTER;
 //        PersistenceExceptionTranslationAutoConfiguration.class,
 })
 //@MapperScan("cn.laifuzhi.template.dao")
+// 不支持yml
 @PropertySource(value = {"classpath:conf.properties"}, encoding = "UTF-8")
 public class Application implements WebServerFactoryCustomizer<TomcatServletWebServerFactory>, WebMvcConfigurer, WebSocketConfigurer {
     private static volatile boolean STARTED;
