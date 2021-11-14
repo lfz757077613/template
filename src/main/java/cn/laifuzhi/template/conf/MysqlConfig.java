@@ -147,6 +147,7 @@ public class MysqlConfig {
     }
 
     @Bean
+//    不需要@DependsOn("sqlSessionFactory1")，因为运行时才会在spring容器根据name获取bean，不需要保证初始化的先后关系
     public MapperScannerConfigurer mapperScanner1() {
         MapperScannerConfigurer metadataMapperScanner = new MapperScannerConfigurer();
         metadataMapperScanner.setSqlSessionFactoryBeanName("sqlSessionFactory1");
