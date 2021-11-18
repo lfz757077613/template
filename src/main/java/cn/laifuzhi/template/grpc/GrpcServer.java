@@ -13,6 +13,7 @@ import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -35,7 +36,7 @@ public class GrpcServer {
                 0,
                 config.getGrpcThreadCount(),
                 60L, TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(config.getGrpcThreadQueue()),
+                new LinkedBlockingQueue<>(config.getGrpcThreadQueue()),
                 new CustomizableThreadFactory(getClass().getSimpleName()));
         executorService.allowCoreThreadTimeOut(true);
 
