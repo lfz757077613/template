@@ -78,6 +78,7 @@ import static cn.laifuzhi.template.utils.Const.FilterName.COMMON_FILTER;
  * ScheduledTaskRegistrar只会使用localExecutor
  * @PostConstruct 初始化成员变量和线程可见性的关系
  * https://stackoverflow.com/questions/49742762/spring-instance-variable-visibility-in-new-thread-started-from-postconstruct
+ * classpath和classpath*都会查找打包后的classes和lib目录，只不过classpath*会加载所有符合要求的文件或文件夹，classpath只会加载第一个匹配的文件或文件夹
  */
 @Slf4j
 @EnableWebSocket
