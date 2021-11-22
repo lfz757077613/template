@@ -30,6 +30,7 @@
     </appender>
     <appender name="async_infoAppender" class="ch.qos.logback.classic.AsyncAppender">
         <appender-ref ref="infoAppender"/>
+        <!-- neverBlock默认false -->
         <!-- 不丢弃日志 -->
         <discardingThreshold>0</discardingThreshold>
         <!-- 队列长度 -->
