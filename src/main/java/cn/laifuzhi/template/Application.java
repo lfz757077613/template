@@ -188,6 +188,8 @@ public class Application implements WebServerFactoryCustomizer<TomcatServletWebS
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
         registry.addViewController("/").setViewName("/static/test.html");
+//        跳到freemarker模板
+//        registry.addViewController("/").setViewName("/api/index");
     }
 
     @Override

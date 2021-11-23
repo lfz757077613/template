@@ -41,6 +41,10 @@ spring:
 #    import:
 #      - optional:classpath:centerConfig.properties
 #      - classpath:regionConfig.yml
+#  默认路径classpath:/templates/
+#  默认文件名后缀.ftlh
+  freemarker:
+    template-loader-path: classpath:/static/
   profiles:
     active: @package.environment@
   lifecycle:
@@ -73,6 +77,9 @@ spring:
     serialization:
       WRITE_DATES_AS_TIMESTAMPS: true
       WRITE_DURATIONS_AS_TIMESTAMPS: true
+#    取消serialization设置，按照如下设置返回格式化日期字符串
+#    date-format: yyyy-MM-dd HH:mm:ss
+#    time-zone: GMT+8
 #  datasource:
 #    url: ${mysql.url}?useUnicode=true&characterEncoding=UTF-8
 #    username: ${mysql.username}

@@ -12,6 +12,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,7 +26,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 
 @Controller
-@RequestMapping("template")
+@RequestMapping
 public class NonRestfulController {
     private File healthCheckFile;
     @PostConstruct
@@ -60,5 +61,11 @@ public class NonRestfulController {
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         headers.setContentDisposition(ContentDisposition.builder(FileUpload.ATTACHMENT).filename(StringUtils.isEmpty(file.getOriginalFilename()) ? "下载文件" : file.getOriginalFilename(), Charsets.UTF_8).build());
         return ResponseEntity.ok().headers(headers).body(file.getBytes());
+    }
+
+    @GetMapping("index")
+    public String healthCheck(Model model) {
+        model.addAttribute("test", "hello");
+        return "index";
     }
 }
