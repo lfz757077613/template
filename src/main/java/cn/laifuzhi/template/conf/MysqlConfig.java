@@ -14,6 +14,7 @@ import org.mybatis.spring.mapper.MapperScannerConfigurer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.init.DataSourceInitializer;
@@ -21,7 +22,6 @@ import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.annotation.Resource;
 import javax.sql.DataSource;
 import java.nio.charset.StandardCharsets;
 
@@ -122,6 +122,7 @@ public class MysqlConfig {
     }
 
     // DataSourceInitializer实现了InitializingBean，spring实例化该对象后，afterPropertiesSet中会执行初始化sql
+    // DataSourceInitializer和SqlInitializationAutoConfiguration中DataSourceInitializationConfiguration中SqlDataSourceScriptDatabaseInitializer底层原理一样
     @Bean
     public DataSourceInitializer dataSourceInitializer1(StaticConfig config, DataSource dataSource1) {
         DataSourceInitializer dataSourceInitializer = new DataSourceInitializer();
