@@ -30,6 +30,7 @@ public final class HttpClient {
         // 默认配置在jar包的ahc-default.properties中
         DefaultAsyncHttpClientConfig config = new DefaultAsyncHttpClientConfig.Builder()
                 .setMaxConnections(200)
+                // 默认0，拿不到连接就报错，因为默认连接数是不限制的
                 .setAcquireFreeChannelTimeout(2000)
                 .setMaxRequestRetry(0)
                 .setConnectTimeout(1000)
