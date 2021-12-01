@@ -57,7 +57,8 @@ spring:
       enabled: never
   main:
     banner-mode: log
-    register-shutdown-hook:
+#  springboot2.6新特性默认不支持循环依赖
+#    allow-circular-references: false
   servlet:
     multipart:
       location: ${user.home}/upload

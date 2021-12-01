@@ -14,13 +14,13 @@ export LOG_PATH=${HOME}/logs
 export HEALTH_CHECK_PATH=healthCheck
 export HEALTH_CHECK_FILE=healthCheck.tmp
 
-mkdir -p LOG_PATH
+mkdir -p ${LOG_PATH}
 
 start ()
 {
   # java -XX:+PrintFlagsInitial 可以看jvm默认参数
     SERVICE_OPTS="-server -jar -Xms8g -Xmx8g -XX:MaxDirectMemorySize=10g -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=512m -XX:+AlwaysPreTouch -XX:-UseBiasedLocking"
-    SERVICE_OPTS="${SERVICE_OPTS} -XX:+UseG1GC -XX:+DisableExplicitGC -Xloggc:${LOG_PATH}/gc_%t.log"
+    SERVICE_OPTS="${SERVICE_OPTS} -XX:+UseG1GC -XX:+DisableExplicitGC -Xloggc:${LOG_PATH}/gc_%p_%t.log"
     SERVICE_OPTS="${SERVICE_OPTS} -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintAdaptiveSizePolicy"
     SERVICE_OPTS="${SERVICE_OPTS} -XX:+PrintReferenceGC -XX:+PrintHeapAtGC -XX:+PrintTenuringDistribution"
     SERVICE_OPTS="${SERVICE_OPTS} -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=5 -XX:GCLogFileSize=30m"

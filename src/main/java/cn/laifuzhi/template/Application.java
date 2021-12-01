@@ -108,10 +108,7 @@ public class Application implements WebServerFactoryCustomizer<TomcatServletWebS
         try {
             long start = System.currentTimeMillis();
             // 手动禁止循环依赖，springboot默认已经禁止了同名bean并提供了配置项，但是没提供循环依赖的配置项
-            CONTEXT = new SpringApplicationBuilder(Application.class)
-                    .initializers((ApplicationContextInitializer<GenericApplicationContext>) applicationContext -> {
-                        applicationContext.setAllowCircularReferences(false);
-                    }).run(args);
+            CONTEXT = SpringApplication.run(Application.class, args);
             getBean(DynamicConfigDBService.class).start();
             getBean(DirectMemReporter.class).start();
             getBean(GrpcServer.class).start();
