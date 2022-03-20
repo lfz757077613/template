@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.ModelAndView;
 
 import javax.annotation.PostConstruct;
 import javax.validation.Valid;
@@ -64,8 +65,9 @@ public class NonRestfulController {
     }
 
     @GetMapping("index")
-    public String healthCheck(Model model) {
-        model.addAttribute("test", "hello");
-        return "index";
+    public ModelAndView index() {
+        ModelAndView modelAndView = new ModelAndView("index");
+        modelAndView.addObject("test", "hello");
+        return modelAndView;
     }
 }

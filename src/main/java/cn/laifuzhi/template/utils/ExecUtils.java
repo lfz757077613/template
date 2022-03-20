@@ -1,51 +1,42 @@
-package cn.laifuzhi.template.utils;
+package com.alibaba.messaging.ops2.utils;
 
+import cn.laifuzhi.template.model.MyException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteWatchdog;
 import org.apache.commons.exec.PumpStreamHandler;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.ByteArrayOutputStream;
 
-/**
- * common-exec的异步执行，看源码设计的并不好，每次都新开线程
- * 所以想异步执行还是自己做吧，不要依赖common-exec
- */
 @Slf4j
 public final class ExecUtils {
+    private static final long DEFAULT_TIMEOUT_MS = 10000;
 
-    public static Tuple<Integer, String> exec(String cmd, long timeout) {
-        Integer exitStatus = null;
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        try {
-            DefaultExecutor executor = new DefaultExecutor();
-            executor.setStreamHandler(new PumpStreamHandler(output));
-            // 毫秒
-            executor.setWatchdog(new ExecuteWatchdog(timeout));
-            exitStatus = executor.execute(CommandLine.parse(cmd));
-            log.info("exec exitStatus:{} cmd:{} output:{}", exitStatus, cmd, System.lineSeparator() + output);
-        } catch (Exception e) {
-            log.error("exec error, cmd:{} output:{}", cmd, System.lineSeparator() + output, e);
-        }
-        return new Tuple<>(exitStatus, output.toString());
+
+    public static String exec(String cmd) {
+        return exec(cmd, DEFAULT_TIMEOUT_MS);
     }
 
-    public static Tuple<Integer, String> exec(String cmd, long timeout, int[] expectExitCodes) {
-        Integer exitStatus = null;
+    public static String exec(String cmd, long timeoutMs) {
+        return exec(cmd, timeoutMs, null);
+    }
+
+    public static String exec(String cmd, long timeoutMs, int[] expectExitCodes) {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         try {
             DefaultExecutor executor = new DefaultExecutor();
-            // 默认0
-            executor.setExitValues(expectExitCodes);
+            if (expectExitCodes != null) {
+                executor.setExitValues(expectExitCodes);
+            }
             executor.setStreamHandler(new PumpStreamHandler(output));
-            // 毫秒
-            executor.setWatchdog(new ExecuteWatchdog(timeout));
-            exitStatus = executor.execute(CommandLine.parse(cmd));
-            log.info("exec exitStatus:{} cmd:{} output:{}", exitStatus, cmd, System.lineSeparator() + output);
+            executor.setWatchdog(new ExecuteWatchdog(timeoutMs));
+            executor.execute(CommandLine.parse(cmd));
+            return StringUtils.trim(output.toString());
         } catch (Exception e) {
-            log.error("exec error, cmd:{} output:{}", cmd, System.lineSeparator() + output, e);
+            log.error("exec error, cmd:{} output:{}", cmd, System.lineSeparator() + StringUtils.trim(output.toString()), e);
+            throw new MyException(String.format("cmd exec error cmd:%s timeout:%s result:%s", cmd, timeoutMs, StringUtils.trim(output.toString())), e);
         }
-        return new Tuple<>(exitStatus, output.toString());
     }
 }

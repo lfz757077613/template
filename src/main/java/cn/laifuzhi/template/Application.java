@@ -17,6 +17,8 @@ import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration
 import org.springframework.boot.autoconfigure.sql.init.SqlInitializationAutoConfiguration;
 import org.springframework.boot.autoconfigure.transaction.TransactionAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.system.ApplicationHome;
+import org.springframework.boot.task.TaskSchedulerBuilder;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.DelegatingFilterProxyRegistrationBean;
@@ -26,11 +28,15 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.format.FormatterRegistry;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.web.method.HandlerTypePredicate;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
@@ -39,7 +45,15 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
 import org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor;
+import org.springframework.web.util.HtmlUtils;
+import springfox.documentation.builders.ApiInfoBuilder;
+import springfox.documentation.builders.PathSelectors;
+import springfox.documentation.builders.RequestHandlerSelectors;
+import springfox.documentation.service.Contact;
+import springfox.documentation.spi.DocumentationType;
+import springfox.documentation.spring.web.plugins.Docket;
 
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -75,7 +89,9 @@ import static cn.laifuzhi.template.utils.Const.FilterName.COMMON_FILTER;
  * Mapping servlets: dispatcherServlet urls=[/]
  *
  * @EnableWebSocket和@EnableScheduling 同时使用会造成spring.task.schedule*设置失效(TaskSchedulingAutoConfiguration不自动生成ThreadPoolTaskScheduler)
- * ScheduledTaskRegistrar只会使用localExecutor
+ * ScheduledTaskRegistrar只会使用localExecutor，boot建议自己初始化ThreadPoolTaskScheduler
+ * https://github.com/spring-projects/spring-boot/issues/28449
+ *
  * @PostConstruct 初始化成员变量和线程可见性的关系
  * https://stackoverflow.com/questions/49742762/spring-instance-variable-visibility-in-new-thread-started-from-postconstruct
  * classpath和classpath*都会查找打包后的classes和lib目录，只不过classpath*会加载所有符合要求的文件或文件夹，classpath只会加载第一个匹配的文件或文件夹
@@ -101,13 +117,15 @@ import static cn.laifuzhi.template.utils.Const.FilterName.COMMON_FILTER;
 // 不支持yml
 @PropertySource(value = {"classpath:conf.properties"}, encoding = "UTF-8")
 public class Application implements WebServerFactoryCustomizer<TomcatServletWebServerFactory>, WebMvcConfigurer, WebSocketConfigurer {
+    private static volatile String APPLICATION_PATH;
     private static volatile boolean STARTED;
     private static volatile ConfigurableApplicationContext CONTEXT;
 
     public static void main(String[] args) {
         try {
             long start = System.currentTimeMillis();
-            // 手动禁止循环依赖，springboot默认已经禁止了同名bean并提供了配置项，但是没提供循环依赖的配置项
+            APPLICATION_PATH = new ApplicationHome(Application.class).getDir().getCanonicalPath();
+            // boot 2.6默认禁止循环依赖
             CONTEXT = SpringApplication.run(Application.class, args);
             getBean(DynamicConfigDBService.class).start();
             getBean(DirectMemReporter.class).start();
@@ -141,6 +159,9 @@ public class Application implements WebServerFactoryCustomizer<TomcatServletWebS
             System.exit(-1);
         }
     }
+    public static String applicationPath() {
+        return APPLICATION_PATH;
+    }
 
     public static boolean isStarted() {
         return STARTED;
@@ -152,6 +173,14 @@ public class Application implements WebServerFactoryCustomizer<TomcatServletWebS
 
     public static <T> T getBean(Class<T> type) {
         return CONTEXT.getBean(type);
+    }
+
+    /**
+     * https://github.com/spring-projects/spring-boot/issues/28449
+     */
+    @Bean
+    public ThreadPoolTaskScheduler taskScheduler(TaskSchedulerBuilder builder) {
+        return builder.build();
     }
 
     /*********************************************************************************************************
@@ -189,6 +218,32 @@ public class Application implements WebServerFactoryCustomizer<TomcatServletWebS
 //        registry.addViewController("/").setViewName("/api/index");
     }
 
+    // knife4j设置
+    @Bean
+    public Docket defaultApi2() {
+        return new Docket(DocumentationType.SWAGGER_2)
+                .apiInfo(new ApiInfoBuilder()
+                        .title("RocketMQ运维平台 API文档说明")
+                        .description("同时支持/api、/inner接口前缀<br>" +
+                                "/api接口给pc页面调用，对接buc，登录的且有权限的员工可以访问<br>" +
+                                "/inner接口提供系统间调用，通过给不同应用分配不同秘钥，进行请求参数验签保证安全")
+                        .termsOfServiceUrl("https://mq-ops.aliyun-inc.com")
+                        .contact(new Contact("赖福智", "https://work.alibaba-inc.com/nwpipe/u/208799", "fuzhi.lfz@alibaba-inc.com"))
+                        .version("1.0")
+                        .build())
+                .groupName("default")
+                .select()
+                .apis(RequestHandlerSelectors.basePackage("com.alibaba.messaging.ops2.controller"))
+                .paths(PathSelectors.any())
+                .build();
+    }
+
+    // knife4j的页面入口和静态资源
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("doc.html").addResourceLocations("classpath:/META-INF/resources/");
+        registry.addResourceHandler("/webjars/**").addResourceLocations("classpath:/META-INF/resources/webjars/");
+    }
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
 //        新加拦截器，指定拦截路径和不拦截路径，boot做好了静态资源映射，不用管静态资源
@@ -200,6 +255,11 @@ public class Application implements WebServerFactoryCustomizer<TomcatServletWebS
 //        设置接口统一前缀，避免每个controller都手动设置前缀。限定包路径，避免springboot自带BasicErrorController受影响
         configurer.addPathPrefix("/api", HandlerTypePredicate.forBasePackageClass(getClass()));
     }
+
+//    @Override
+//    public void addFormatters(FormatterRegistry registry) {
+//        registry.addConverter((Converter<String, String>) source -> HtmlUtils.htmlEscape(source, StandardCharsets.UTF_8.name()));
+//    }
 
 //    统一跨域设置，避免每个controller都用过@CrossOrigin
 //    @Override

@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.6.1</version>
+        <version>2.6.2</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>cn.laifuzhi</groupId>
@@ -23,10 +23,11 @@
         <shadingJarClassifierName>shade</shadingJarClassifierName>
         <shadeJarName>${project.build.finalName}-${shadingJarClassifierName}.${project.packaging}</shadeJarName>
 
+        <knife4j.version>2.0.9</knife4j.version>
         <mybatis-starter.version>2.2.0</mybatis-starter.version>
         <!-- 不使用mybatis-spring-boot-starter，但是mybatis和mybatis-spring版本和mybatis-spring-boot-starter里的保持一致 -->
         <mybatis-spring.version>2.0.6</mybatis-spring.version>
-        <mybatis.version>3.5.7</mybatis.version>
+        <mybatis.version>3.5.9</mybatis.version>
         <druid.version>1.2.8</druid.version>
 
         <redisson.version>3.16.4</redisson.version>
@@ -126,6 +127,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.xiaoymin</groupId>
+            <artifactId>knife4j-spring-boot-starter</artifactId>
+            <version>${knife4j.version}</version>
         </dependency>
 
         <!-- db start -->
@@ -426,6 +433,8 @@
                     <excludes>
                         <exclude>healthCheck.tmp</exclude>
                         <exclude>plugins/*</exclude>
+                        <exclude>helm</exclude>
+                        <exclude>kubectl</exclude>
                     </excludes>
                 </configuration>
             </plugin>

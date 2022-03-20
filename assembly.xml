@@ -33,6 +33,8 @@
                 <include>dynamicConf.json</include>
                 <!-- 复制健康检查文件 -->
                 <include>healthCheck.tmp</include>
+                <include>helm</include>
+                <include>kubectl</include>
             </includes>
         </fileSet>
 

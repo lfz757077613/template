@@ -40,6 +40,7 @@ public class OkHttp {
         client.dispatcher().setMaxRequestsPerHost(512);
     }
 
+    // https://square.github.io/okhttp/4.x/okhttp/okhttp3/-ok-http-client/ 说明了okhttp的shutdown
     @PreDestroy
     private void destroy() throws InterruptedException {
         log.info("OkHttp shutdown ...");

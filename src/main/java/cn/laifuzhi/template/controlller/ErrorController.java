@@ -3,8 +3,8 @@ package cn.laifuzhi.template.controlller;
 import cn.laifuzhi.template.model.MyException;
 import cn.laifuzhi.template.model.enumeration.BizCodeEnum;
 import cn.laifuzhi.template.model.http.resp.Resp;
-import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -27,7 +27,7 @@ public class ErrorController {
     @ExceptionHandler(Throwable.class)
     private Resp<Void> handlerThrowable(Throwable t) {
         log.error("unknown error", t);
-        return Resp.build(BizCodeEnum.UNKNOWN_ERROR);
+        return Resp.fail("unexpected error:" + StringUtils.defaultString(t.getMessage(), t.toString()));
     }
 
     // Controller中方法抛出spring自己定义的BindException，其他类的方法里抛出jsr303标准的ConstraintViolationException
@@ -40,17 +40,18 @@ public class ErrorController {
                 .stream()
                 .map(fieldError -> fieldError.getField() + ":" + fieldError.getDefaultMessage())
                 .collect(Collectors.toList());
-        return Resp.build(BizCodeEnum.ILLEGAL_PARAM, JSON.toJSONString(errorMessageList));
+        return Resp.paramError(errorMessageList.toString());
     }
 
     // 异步请求超时，又没有设置超时结果时抛出该异常
     @ExceptionHandler(AsyncRequestTimeoutException.class)
     private Resp<Void> handlerAsyncRequestTimeoutException(AsyncRequestTimeoutException e) {
-        return Resp.build(BizCodeEnum.TIMEOUT);
+        return Resp.fail(BizCodeEnum.TIMEOUT, null);
     }
 
     @ExceptionHandler(MyException.class)
     private Resp<Void> handlerMyException(MyException e) {
-        return Resp.build(e.getBizCodeEnum());
+        log.error("handlerOpsException", e);
+        return Resp.fail(e.getMessage());
     }
 }

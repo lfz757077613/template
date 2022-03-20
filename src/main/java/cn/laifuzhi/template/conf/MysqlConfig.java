@@ -14,7 +14,6 @@ import org.mybatis.spring.mapper.MapperScannerConfigurer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.init.DataSourceInitializer;
@@ -29,6 +28,7 @@ import java.nio.charset.StandardCharsets;
  * 多数据源手动配置
  * hikari拿到连接后，如果连接已经超过500ms没用了，就会执行valid验证，所以设置keepalive没啥意义
  * druid是只有配置了testOnBorrow获取连接后才会验证(抄commons-pool的思路，命名都一样)
+ * druid1.0.16前valid卡死: https://github.com/alibaba/druid/issues/919
  */
 @Configuration
 public class MysqlConfig {
@@ -149,7 +149,8 @@ public class MysqlConfig {
 
     @Bean
 //    不需要@DependsOn("sqlSessionFactory1")，因为运行时才会在spring容器根据name获取bean，不需要保证初始化的先后关系
-    public MapperScannerConfigurer mapperScanner1() {
+//    需要通过static提升初始化优先级，否则该config类会early
+    private static MapperScannerConfigurer mapperScanner1() {
         MapperScannerConfigurer metadataMapperScanner = new MapperScannerConfigurer();
         metadataMapperScanner.setSqlSessionFactoryBeanName("sqlSessionFactory1");
         metadataMapperScanner.setBasePackage("cn.laifuzhi.template.dao");

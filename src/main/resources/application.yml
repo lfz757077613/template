@@ -35,7 +35,7 @@ server:
 #      没有默认值，tomcat默认ttl5秒，org.apache.catalina.webresources.Cache
 #      cache-ttl: 5s
 spring:
-#  springboot2.4新特性不支持设置字符集。properties文件默认8859-1，使用中文需要用unicode，yml默认使用utf8
+#  springboot2.4新特性，不支持设置字符集。properties文件默认8859-1，使用中文需要用unicode，yml默认使用utf8
 #  https://github.com/spring-projects/spring-boot/issues/28663
 #  config:
 #    import:
@@ -43,8 +43,8 @@ spring:
 #      - classpath:regionConfig.yml
 #  默认路径classpath:/templates/
 #  默认文件名后缀.ftlh
-  freemarker:
-    template-loader-path: classpath:/static/
+#  freemarker:
+#    template-loader-path: classpath:/static/
   profiles:
     active: @package.environment@
   lifecycle:
@@ -57,7 +57,7 @@ spring:
       enabled: never
   main:
     banner-mode: log
-#  springboot2.6新特性默认不支持循环依赖
+#  springboot2.6新提供的配置项，默认不支持循环依赖，之前只能通过代码设置
 #    allow-circular-references: false
   servlet:
     multipart:
@@ -140,9 +140,9 @@ template:
   idleTimeout: 2m
   maxLifeTime: 5m
   maximumPoolSize: 10
-# sql默认超时时间，想个性配置可以在mapper文件中单独配置timeout
+# sql默认超时时间，实际是服务端超时，想个性配置可以在mapper文件中单独配置timeout
   defaultDBTimeout: 10s
-#  设置socketTimeout和connectTimeout避免长时间阻塞到os socket超时
+#  设置socketTimeout(客户端超时)和connectTimeout避免长时间阻塞到os socket超时
 #  数据库sql超时时间由最底层的socketTimeout、mybatis默认statement超时、mapper中指定sql的超时共同决定，socketTimeout是最底层的，应该设置的尽量大
 #  https://www.elietio.xyz/posts/ceaacf5f.html
 #  https://xie.infoq.cn/article/5da78664d6b54400f3235ad5a

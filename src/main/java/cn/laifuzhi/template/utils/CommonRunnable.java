@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 
 import java.util.Map;
-import java.util.Objects;
 
 @Slf4j
 public class CommonRunnable implements Runnable {
@@ -23,10 +22,7 @@ public class CommonRunnable implements Runnable {
     @Override
     public void run() {
         try {
-            if (commonContext != null) {
-                CommonContext.put(commonContext);
-            }
-            if (!Objects.equals(curThread, Thread.currentThread())) {
+            if (curThread != Thread.currentThread()) {
                 if (commonContext != null) {
                     CommonContext.put(commonContext);
                 }
@@ -39,7 +35,7 @@ public class CommonRunnable implements Runnable {
             log.error("CommonRunnable error", t);
             throw t;
         } finally {
-            if (!Objects.equals(curThread, Thread.currentThread())) {
+            if (curThread != Thread.currentThread()) {
                 if (commonContext != null) {
                     CommonContext.remove();
                 }
