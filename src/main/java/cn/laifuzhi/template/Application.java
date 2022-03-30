@@ -1,6 +1,5 @@
 package cn.laifuzhi.template;
 
-import cn.laifuzhi.template.conf.StaticConfig;
 import cn.laifuzhi.template.grpc.GrpcServer;
 import cn.laifuzhi.template.matrix.DirectMemReporter;
 import cn.laifuzhi.template.netty.NettyServer;
@@ -16,20 +15,15 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerA
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.autoconfigure.sql.init.SqlInitializationAutoConfiguration;
 import org.springframework.boot.autoconfigure.transaction.TransactionAutoConfiguration;
-import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.system.ApplicationHome;
 import org.springframework.boot.task.TaskSchedulerBuilder;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.DelegatingFilterProxyRegistrationBean;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.core.convert.converter.Converter;
-import org.springframework.format.FormatterRegistry;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
@@ -45,7 +39,6 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
 import org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor;
-import org.springframework.web.util.HtmlUtils;
 import springfox.documentation.builders.ApiInfoBuilder;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
@@ -53,7 +46,6 @@ import springfox.documentation.service.Contact;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -92,7 +84,8 @@ import static cn.laifuzhi.template.utils.Const.FilterName.COMMON_FILTER;
  * ScheduledTaskRegistrar只会使用localExecutor，boot建议自己初始化ThreadPoolTaskScheduler
  * https://github.com/spring-projects/spring-boot/issues/28449
  *
- * @PostConstruct 初始化成员变量和线程可见性的关系
+ * @PostConstruct 初始化成员变量和线程可见性的关系(DefaultSingletonBeanRegistry)，因此最好任何时候都使用单例bean
+ * https://lotabout.me/books/Java-Concurrency/Thread-Safety-Home-Work/Spring-Bean-Initialization.html
  * https://stackoverflow.com/questions/49742762/spring-instance-variable-visibility-in-new-thread-started-from-postconstruct
  * classpath和classpath*都会查找打包后的classes和lib目录，只不过classpath*会加载所有符合要求的文件或文件夹，classpath只会加载第一个匹配的文件或文件夹
  */

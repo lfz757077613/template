@@ -45,7 +45,7 @@ public final class MailClient {
         try {
             HashMap<String, String> paramMap = Maps.newHashMap();
             paramMap.put("test", "hello");
-            Template indexTemplate = freeMarkerConfigurer.getConfiguration().getTemplate("index", StandardCharsets.UTF_8.name());
+            Template indexTemplate = freeMarkerConfigurer.getConfiguration().getTemplate("index.ftlh", StandardCharsets.UTF_8.name());
             MimeMessageHelper helper = new MimeMessageHelper(sender.createMimeMessage(), true);
             helper.setFrom(mailProperties.getUsername());
             helper.setTo("757077613@qq.com");

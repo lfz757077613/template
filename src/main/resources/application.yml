@@ -34,6 +34,27 @@ server:
 #       allow-caching: true
 #      没有默认值，tomcat默认ttl5秒，org.apache.catalina.webresources.Cache
 #      cache-ttl: 5s
+
+management:
+  server:
+    port: 8081
+#  health:
+#    defaults:
+#      enabled: false
+  endpoints:
+#  默认启用全部端点，可以设置false并且通过每个端点的enable指定开启
+#    enabled-by-default: false
+    web:
+#  默认http访问url前缀
+      base-path: /actuator
+#  默认只有health
+      exposure:
+        include: "*"
+  endpoint:
+    shutdown:
+# 唯一默认关闭的端点
+      enabled: false
+
 spring:
 #  springboot2.4新特性，不支持设置字符集。properties文件默认8859-1，使用中文需要用unicode，yml默认使用utf8
 #  https://github.com/spring-projects/spring-boot/issues/28663

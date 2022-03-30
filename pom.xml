@@ -23,6 +23,7 @@
         <shadingJarClassifierName>shade</shadingJarClassifierName>
         <shadeJarName>${project.build.finalName}-${shadingJarClassifierName}.${project.packaging}</shadeJarName>
 
+        <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <knife4j.version>2.0.9</knife4j.version>
         <mybatis-starter.version>2.2.0</mybatis-starter.version>
         <!-- 不使用mybatis-spring-boot-starter，但是mybatis和mybatis-spring版本和mybatis-spring-boot-starter里的保持一致 -->
@@ -120,6 +121,10 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
             <optional>true</optional>
         </dependency>
@@ -127,6 +132,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
         <dependency>
