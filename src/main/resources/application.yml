@@ -173,7 +173,12 @@ template:
 #  https://dev.mysql.com/doc/connector-j/5.1/en/connector-j-reference-charsets.html
 #  https://dev.mysql.com/doc/connector-j/5.1/en/connector-j-usagenotes-troubleshooting.html
 #  https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-reference-charsets.html
-  metadataDBUrl: ${mysql.url}?socketTimeout=300000&connectTimeout=2000
+#  mysql client时区设置看NativeProtocol.configureTimeZone逻辑
+#  使用connectionTimeZone、forceConnectionTimeZoneToSession保证jvm和mysql时区一致，preserveInstants默认为true，如果保证了jvm和数据库时区一致可以设置false则不会进行时间转换
+#  https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-time-instants.html
+#  connectionTimeZone也可以设置成LOCAL，不过如果mysql没有导入时区表(例如Asia/Shanghai)则会报错
+#  https://dev.mysql.com/doc/refman/8.0/en/mysql-tzinfo-to-sql.html 导入时区表
+  metadataDBUrl: ${mysql.url}?socketTimeout=300000&connectTimeout=2000&connectionTimeZone=%2B08%3A00&preserveInstants=false&forceConnectionTimeZoneToSession=true
   metadataDBUsername: ${mysql.username}
   metadataDBPassword: ${mysql.password}
   metadataMapperLocation: classpath:mapper/*.xml
