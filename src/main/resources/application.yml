@@ -34,6 +34,13 @@ server:
 #       allow-caching: true
 #      没有默认值，tomcat默认ttl5秒，org.apache.catalina.webresources.Cache
 #      cache-ttl: 5s
+    accesslog:
+      enabled: true
+      max-days: 2
+      directory: ${user.home}/logs
+      pattern: "%t %a %{X-Forwarded-For}i %r %s %b %Dms"
+      buffered: false
+      encoding: utf-8
 
 management:
   server:

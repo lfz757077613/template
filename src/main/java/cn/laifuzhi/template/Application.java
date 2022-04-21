@@ -46,6 +46,8 @@ import springfox.documentation.service.Contact;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -116,6 +118,10 @@ public class Application implements WebServerFactoryCustomizer<TomcatServletWebS
 
     public static void main(String[] args) {
         try {
+            if (TimeZone.getDefault().getRawOffset() != TimeUnit.HOURS.toMillis(8)) {
+                System.err.println("default timeZone error, timeZone:" + TimeZone.getDefault());
+                return;
+            }
             long start = System.currentTimeMillis();
             APPLICATION_PATH = new ApplicationHome(Application.class).getDir().getCanonicalPath();
             // boot 2.6默认禁止循环依赖
@@ -147,7 +153,7 @@ public class Application implements WebServerFactoryCustomizer<TomcatServletWebS
             // 之后无法使用spring容器和logback
             lock.unlock();
         } catch (Throwable t) {
-            log.error("start error", t);
+            t.printStackTrace();
             // 会触发spring的jvm关闭回调钩子
             System.exit(-1);
         }
