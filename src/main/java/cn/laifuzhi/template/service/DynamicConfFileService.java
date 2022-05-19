@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * 参考log4j的FileWatchdog工具类，jdk7后可以更优雅的通过WatchService实现
+ * https://heapdump.cn/article/3778858 jdk bug造成感知不到文件更新，所以最好不要通过文件的更新时间判断，最好自己在文件内容中保存时间戳或版本号
  */
 @Slf4j
 @Component
