@@ -5,8 +5,12 @@
 
 # nginx默认和客户端保持长连，和upstream的服务器通过http1.0请求，每次请求都新建连接
 # tengine和upstream保持长连接配置需要指定proxy_http_version为1.1(默认1.0)，删除Connection请求头(默认close)
+# tengine2.3.3 configure 时需要加参数--add-module=./modules/ngx_http_upstream_check_module/ (tengine官方文档有误，这种方式报错./configure --with-http_upstream_check_module)
+# 文档说默认开启http_check模块，实际还是需要制指定开启。否则会报nginx: emerg unknown directive "check" (https://github.com/alibaba/tengine/issues/1394)
 # 这样的话通过http1.1默认就是keep-alive了(即使没有Connection请求头)，抓包可以确定请求会复用连接，Connection也可配置成keep-alive
 # upstream中设置keepalive 数字代表最大空闲连接数
+# tengine和客户端、upstream都是长连接之后，收到同一个客户端的同一个链接的请求会负载均衡转发到upstream
+# 所以通过tengine的http_check模块可以做到http服务无损发布，实际上这里的tengine起到了注册中心的作用(先摘流量，再等待正在处理的请求处理完毕)
 http {   
     server {
         listen       80;
