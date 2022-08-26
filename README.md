@@ -94,6 +94,8 @@ http {
         }
     }
     upstream self {
+        # https://www.upyun.com/opentalk/444.html需要增加module ./configure --add-module=./modules/ngx_http_upstream_vnswrr_module
+        # vnswrr
         # mac docker desktop独有的宿主机域名
         # max_fails默认1，fail_timeout默认10秒，代表默认有一次失败就屏蔽10秒
         server docker.for.mac.host.internal:8080 max_fails=1 fail_timeout=10s; 
