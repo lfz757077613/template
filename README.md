@@ -11,7 +11,13 @@
 # upstream中设置keepalive 数字代表最大空闲连接数
 # tengine和客户端、upstream都是长连接之后，收到同一个客户端的同一个链接的请求会负载均衡转发到upstream
 # 所以通过tengine的http_check模块可以做到http服务无损发布，实际上这里的tengine起到了注册中心的作用(先摘流量，再等待正在处理的请求处理完毕)
+# https://tengine.taobao.org/document_cn/ngx_log_pipe_cn.html 异步打印日志及自动回滚功能
+error_log  "pipe:rollback logs/error_log interval=60m baknum=5 maxsize=2048M" info;
 http {   
+	log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+	access_log  "pipe:rollback logs/access_log interval=1h baknum=5 maxsize=2G"  main;
     server {
         listen       80;
         server_name  localhost;
@@ -38,5 +44,7 @@ http {
         check_http_send "GET /template/healthCheck HTTP/1.0\r\n\r\n";
         check_http_expect_alive http_2xx;
         keepalive 16;
+        # 要比tomcat keep-alive-timeout设置的小
+        keepalive_timeout 20s;
     }
 }
