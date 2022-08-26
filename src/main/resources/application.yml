@@ -18,7 +18,8 @@ server:
 #    一个keep-alive的连接最多处理请求个数，默认100，也就是超过100个请求连接就关了
 #    服务端到达100次时会在响应头里增加Connection:close并关闭连接，所以最好客户端识别后主动关闭连接(可能会有双端同时发fin的情况)
 #    如果客户端头铁继续发请求，服务端返回rst
-    max-keep-alive-requests: -1
+#    nginx对该参数的解释(https://nginx.org/en/docs/http/ngx_http_upstream_module.html#keepalive_timeout)：Closing connections periodically is necessary to free per-connection memory allocations. Therefore, using too high maximum number of requests could result in excessive memory usage and not recommended.
+    max-keep-alive-requests: 100
     max-connections: 10240
     threads:
       min-spare: 100
@@ -34,6 +35,7 @@ server:
 #       allow-caching: true
 #      没有默认值，tomcat默认ttl5秒，org.apache.catalina.webresources.Cache
 #      cache-ttl: 5s
+#    accesslog格式说明：https://tomcat.apache.org/tomcat-8.0-doc/config/valve.html#Access_Log_Valve/Attributes
     accesslog:
       enabled: true
       max-days: 2
