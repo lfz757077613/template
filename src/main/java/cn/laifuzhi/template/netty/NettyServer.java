@@ -14,11 +14,17 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Component
@@ -34,7 +40,9 @@ public class NettyServer {
     @Resource
     private ConnectManager connectManager;
 
+    private AtomicBoolean stopped = new AtomicBoolean();
     private ServerBootstrap serverBootstrap;
+    private ThreadPoolExecutor executorService;
 
     @PostConstruct
     private void init() {
@@ -49,7 +57,13 @@ public class NettyServer {
             workerEventLoopGroup = new EpollEventLoopGroup();
             channelClass = EpollServerSocketChannel.class;
         }
-
+        executorService = new ThreadPoolExecutor(
+                50,
+                50,
+                0, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>(),
+                new CustomizableThreadFactory(getClass().getSimpleName()));
+        reqHandler.init(stopped, executorService);
         serverBootstrap = new ServerBootstrap().group(bossEventLoopGroup, workerEventLoopGroup)
                 .channel(channelClass)
                 .localAddress(8081)
@@ -72,10 +86,22 @@ public class NettyServer {
     }
 
     @PreDestroy
-    private void destroy() {
-        log.info("NettyServer shutdown ...");
-        serverBootstrap.config().group().shutdownGracefully().awaitUninterruptibly();
-        serverBootstrap.config().childGroup().shutdownGracefully().awaitUninterruptibly();
+    private void destroy() throws InterruptedException {
+        if (!stopped.compareAndSet(false, true)) {
+            log.info("nettyServer already closed or closing");
+            return;
+        }
+        log.info("NettyServer shutdown boss group ...");
+        // 拒绝新连接请求
+        serverBootstrap.config().group().shutdownGracefully().awaitUninterruptibly(Long.MAX_VALUE);
+        executorService.shutdown();
+        while (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
+            log.info("NettyServer executorService shutdown wait");
+        }
+        log.info("NettyServer waitAllChannelOutboundBufferFlush:{}", connectManager.waitAllChannelOutboundBufferFlush(5));
+        // 断开当前所有链接
+        log.info("NettyServer shutdown worker group ...");
+        serverBootstrap.config().childGroup().shutdownGracefully().awaitUninterruptibly(Long.MAX_VALUE);
         log.info("NettyServer shutdown finished");
     }
 
