@@ -108,6 +108,8 @@ spring:
     serialization:
       WRITE_DATES_AS_TIMESTAMPS: true
       WRITE_DURATIONS_AS_TIMESTAMPS: true
+    mapper:
+      PROPAGATE_TRANSIENT_MARKER: true
 #    取消serialization设置，按照如下设置返回格式化日期字符串
 #    date-format: yyyy-MM-dd HH:mm:ss
 #    time-zone: GMT+8
