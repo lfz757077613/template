@@ -24,7 +24,7 @@ start ()
     SERVICE_OPTS="${SERVICE_OPTS} -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintAdaptiveSizePolicy"
     SERVICE_OPTS="${SERVICE_OPTS} -XX:+PrintReferenceGC -XX:+PrintHeapAtGC -XX:+PrintTenuringDistribution"
     SERVICE_OPTS="${SERVICE_OPTS} -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=5 -XX:GCLogFileSize=30m"
-    SERVICE_OPTS="${SERVICE_OPTS} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=${LOG_PATH}/java.hprof"
+    SERVICE_OPTS="${SERVICE_OPTS} -XX:+CrashOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=${LOG_PATH}/java.hprof"
     SERVICE_OPTS="${SERVICE_OPTS} -XX:-OmitStackTraceInFastThrow"
     online
     nohup ${JAVA} ${SERVICE_OPTS} ${APP_HOME}/${APP_NAME}.jar > ${LOG_PATH}/nohup_stdout.log 2>&1 &

@@ -62,7 +62,7 @@ import static cn.laifuzhi.template.utils.Const.FilterName.COMMON_FILTER;
                 ___/'---'\___
               .' \ |     | / '.
              / \||||  :  ||||/ \
-            / _||||| -:- |||||- \
+            / _||||| -:- |||||_ \
            |   | \ \  -  / / |   |
            | \_|  ''\---/''  |_/ |
            \  .-\__  '-'  __/-.  /
