@@ -8,11 +8,15 @@ import cn.laifuzhi.template.model.enumeration.BizCodeEnum;
 import cn.laifuzhi.template.model.enumeration.OrderStateEnum;
 import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.ibatis.session.ExecutorType;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.Resource;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -25,6 +29,8 @@ public class OrderService {
     private UserInfoDao userInfoDao;
     @Resource(name = "transactionTemplate1")
     private TransactionTemplate transactionTemplate;
+    @Resource(name = "sqlSessionFactory1")
+    private SqlSessionFactory sqlSessionFactory;
 
 //    @Transactional(rollbackFor = Throwable.class, propagation = Propagation.REQUIRES_NEW, transactionManager = "transactionManager1")
     public BizCodeEnum saveOrder(OrderInfoPO orderInfo) {
@@ -44,6 +50,16 @@ public class OrderService {
         } catch (Exception e) {
             log.error("saveOrder error, order:{}", JSON.toJSONString(orderInfo), e);
             return BizCodeEnum.SYSTEM_ERROR;
+        }
+    }
+
+    public void batchInsert(List<OrderInfoPO> orderInfoPOList) {
+        try (SqlSession sqlSession = sqlSessionFactory.openSession(ExecutorType.BATCH)) {
+            OrderInfoDao orderInfoDao = sqlSession.getMapper(OrderInfoDao.class);
+            for (OrderInfoPO orderInfoPO : orderInfoPOList) {
+                orderInfoDao.insert(orderInfoPO);
+            }
+            sqlSession.commit();
         }
     }
 
