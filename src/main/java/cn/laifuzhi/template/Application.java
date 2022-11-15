@@ -8,6 +8,11 @@ import com.alibaba.druid.support.http.ResourceServlet;
 import com.alibaba.druid.support.http.StatViewFilter;
 import com.alibaba.druid.support.http.WebStatFilter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -157,6 +162,26 @@ public class Application implements WebServerFactoryCustomizer<TomcatServletWebS
             // 会触发spring的jvm关闭回调钩子
             System.exit(-1);
         }
+
+//        Options options = new Options();
+//        // 支持完整配置使用Option.builder()，正常情况直接使用下面的两种方法
+//        Option option = Option.builder("a")
+//                .longOpt("argA")
+//                .argName("showName")
+//                // 该参数是否有value
+//                .hasArg(true)
+//                // 有value的情况下，是否可以不传value
+//                .optionalArg(false)
+//                // 是否毕传参数
+//                .required(false)
+//                .build();
+//        options.addOption(option);
+//        options.addOption("b", "argB", true, "desc");
+//        options.addRequiredOption("c", "argC", true, "desc");
+//        CommandLineParser commandLineParser = new DefaultParser();
+//        CommandLine commandLine = commandLineParser.parse(options, args);
+//        System.out.println(commandLine.hasOption("a"));
+//        System.out.println(commandLine.getOptionValue("a"));
     }
     public static String applicationPath() {
         return APPLICATION_PATH;

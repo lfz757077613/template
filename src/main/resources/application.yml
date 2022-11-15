@@ -156,6 +156,14 @@ spring:
       shutdown:
         await-termination: true
         await-termination-period: 3s
+#  spring-shell相关设置
+#  shell:
+#    config:
+#      设置保存历史执行命令文件的目录
+#      location:
+#    history:
+#      设置保存历史执行命令的文件名
+#      name: history.log
 
 #mybatis:
 #  mapper-locations: classpath:mapper/*.xml
