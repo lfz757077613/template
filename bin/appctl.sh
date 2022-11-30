@@ -19,6 +19,7 @@ mkdir -p ${LOG_PATH}
 start ()
 {
   # java -XX:+PrintFlagsInitial 可以看jvm默认参数
+  # 即使是在容器环境也不建议使用这两个参数，仍然建议硬编码控制内存UseContainerSupport MaxRAMPercentage https://blog.arkey.fr/2020/10/27/maxrampercentage-is-not-what-i-wished-for/
     SERVICE_OPTS="-server -jar -Xms8g -Xmx8g -XX:MaxDirectMemorySize=10g -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=512m -XX:+AlwaysPreTouch -XX:-UseBiasedLocking"
     SERVICE_OPTS="${SERVICE_OPTS} -XX:+UseG1GC -XX:+DisableExplicitGC -Xloggc:${LOG_PATH}/gc_%p_%t.log"
     SERVICE_OPTS="${SERVICE_OPTS} -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintAdaptiveSizePolicy"
