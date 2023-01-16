@@ -30,6 +30,9 @@ import static cn.laifuzhi.template.utils.Const.FilterName.COMMON_FILTER;
 import static cn.laifuzhi.template.utils.Const.MDC_TRACE_ID;
 import static cn.laifuzhi.template.utils.Const.MDC_UID;
 
+/**
+ * OncePerRequestFilter说明：https://www.baeldung.com/spring-onceperrequestfilter
+ */
 @Slf4j
 @Component(COMMON_FILTER)
 public class CommonFilter extends OncePerRequestFilter {
