@@ -9,9 +9,6 @@
         create_ts as createTs,
         update_ts as updateTs
         from dynamic_config
-        <where>
-            and config_key=#{configKey}
-            and version &gt; #{version}
-        </where>
+        where config_key=#{configKey}
     </select>
 </mapper>
