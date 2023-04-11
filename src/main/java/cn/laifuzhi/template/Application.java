@@ -20,15 +20,18 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerA
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.autoconfigure.sql.init.SqlInitializationAutoConfiguration;
 import org.springframework.boot.autoconfigure.transaction.TransactionAutoConfiguration;
+import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.system.ApplicationHome;
 import org.springframework.boot.task.TaskSchedulerBuilder;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.DelegatingFilterProxyRegistrationBean;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
@@ -51,6 +54,8 @@ import springfox.documentation.service.Contact;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -127,9 +132,17 @@ public class Application implements WebServerFactoryCustomizer<TomcatServletWebS
                 System.err.println("default timeZone error, timeZone:" + TimeZone.getDefault());
                 return;
             }
+            if (Charset.defaultCharset() != StandardCharsets.UTF_8) {
+                System.err.println("default charset error, charset:" + Charset.defaultCharset());
+                return;
+            }
             long start = System.currentTimeMillis();
             APPLICATION_PATH = new ApplicationHome(Application.class).getDir().getCanonicalPath();
             // boot 2.6默认禁止循环依赖
+//            CONTEXT = new SpringApplicationBuilder(Application.class)
+//                    .initializers((ApplicationContextInitializer<GenericApplicationContext>) applicationContext -> {
+//                        applicationContext.setAllowCircularReferences(false);
+//                    }).run(args);
             CONTEXT = SpringApplication.run(Application.class, args);
             getBean(DynamicConfigDBService.class).start();
             getBean(DirectMemReporter.class).start();

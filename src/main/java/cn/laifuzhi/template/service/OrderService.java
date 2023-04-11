@@ -53,7 +53,8 @@ public class OrderService {
         }
     }
 
-    // 事务不受spring管理，批量个数太多则需要控制insert一定条数就commit
+    // 事务不受spring管理
+    // https://github.com/mybatis/mybatis-3/wiki/FAQ#how-do-i-code-a-batch-insert
     public void batchInsert(List<OrderInfoPO> orderInfoPOList) {
         try (SqlSession sqlSession = sqlSessionFactory.openSession(ExecutorType.BATCH)) {
             OrderInfoDao orderInfoDao = sqlSession.getMapper(OrderInfoDao.class);
