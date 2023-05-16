@@ -9,6 +9,8 @@ import cn.laifuzhi.template.service.LockService;
 import cn.laifuzhi.template.utils.CommonRunnable;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.Maps;
+import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Validated
 // @CrossOrigin
+//openapi3隐藏接口的注解 @Hidden
 @RestController
 @RequestMapping(path = "/rest")
 public class RestfulController extends AsyncBaseController{
@@ -63,6 +66,7 @@ public class RestfulController extends AsyncBaseController{
         return deferredResult;
     }
 
+//    @Operation(description = "接口说明")
     @APIEntrance
     @GetMapping("get1")
     public Resp<Map> get1(HttpServletRequest request) throws JsonProcessingException {

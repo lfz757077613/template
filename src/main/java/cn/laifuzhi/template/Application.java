@@ -1,5 +1,6 @@
 package cn.laifuzhi.template;
 
+import cn.laifuzhi.template.conf.StaticConfig;
 import cn.laifuzhi.template.grpc.GrpcServer;
 import cn.laifuzhi.template.matrix.DirectMemReporter;
 import cn.laifuzhi.template.netty.NettyServer;
@@ -7,12 +8,11 @@ import cn.laifuzhi.template.service.DynamicConfigDBService;
 import com.alibaba.druid.support.http.ResourceServlet;
 import com.alibaba.druid.support.http.StatViewFilter;
 import com.alibaba.druid.support.http.WebStatFilter;
+import io.swagger.v3.oas.models.ExternalDocumentation;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -20,18 +20,15 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerA
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.autoconfigure.sql.init.SqlInitializationAutoConfiguration;
 import org.springframework.boot.autoconfigure.transaction.TransactionAutoConfiguration;
-import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.system.ApplicationHome;
 import org.springframework.boot.task.TaskSchedulerBuilder;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.DelegatingFilterProxyRegistrationBean;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
@@ -47,12 +44,6 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
 import org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor;
-import springfox.documentation.builders.ApiInfoBuilder;
-import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.service.Contact;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spring.web.plugins.Docket;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -257,30 +248,23 @@ public class Application implements WebServerFactoryCustomizer<TomcatServletWebS
 
     // knife4j设置
     @Bean
-    public Docket defaultApi2() {
-        return new Docket(DocumentationType.SWAGGER_2)
-                .apiInfo(new ApiInfoBuilder()
-                        .title("RocketMQ运维平台 API文档说明")
-                        .description("同时支持/api、/inner接口前缀<br>" +
+    public OpenAPI openAPI(StaticConfig config) {
+        return new OpenAPI()
+                .info(new Info().title("RocketMQ运维平台 API文档说明")
+                        .contact(new Contact().name("赖福智").email("fuzhi.lfz@alibaba-inc.com").url("https://work.alibaba-inc.com/nwpipe/u/208799"))
+                        .description("同时支持/api、/inner接口前缀，服务器时区为东八区<br>" +
                                 "/api接口给pc页面调用，对接buc，登录的且有权限的员工可以访问<br>" +
                                 "/inner接口提供系统间调用，通过给不同应用分配不同秘钥，进行请求参数验签保证安全")
-                        .termsOfServiceUrl("https://mq-ops.aliyun-inc.com")
-                        .contact(new Contact("赖福智", "https://work.alibaba-inc.com/nwpipe/u/208799", "fuzhi.lfz@alibaba-inc.com"))
-                        .version("1.0")
-                        .build())
-                .groupName("default")
-                .select()
-                .apis(RequestHandlerSelectors.basePackage("com.alibaba.messaging.ops2.controller"))
-                .paths(PathSelectors.any())
-                .build();
+                        .version(config.getLegaoAppVesion()))
+                .externalDocs(new ExternalDocumentation().description("RocketMQ运维平台地址").url("https://mq-ops.aliyun-inc.com"));
     }
 
     // knife4j的页面入口和静态资源
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("doc.html").addResourceLocations("classpath:/META-INF/resources/");
-        registry.addResourceHandler("/webjars/**").addResourceLocations("classpath:/META-INF/resources/webjars/");
     }
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
 //        新加拦截器，指定拦截路径和不拦截路径，boot做好了静态资源映射，不用管静态资源
@@ -340,6 +324,14 @@ public class Application implements WebServerFactoryCustomizer<TomcatServletWebS
         proxyRegistrationBean.setOrder(0);
 //        设置是否支持异步servlet，默认true
 //        proxyRegistrationBean.setAsyncSupported();
+
+//        knife4j的接口
+        proxyRegistrationBean.addUrlPatterns("/doc.html");
+        proxyRegistrationBean.addUrlPatterns("/webjars/*");
+        proxyRegistrationBean.addUrlPatterns("/v3/api-docs");
+        proxyRegistrationBean.addUrlPatterns("/v3/api-docs/swagger-config");
+        proxyRegistrationBean.addUrlPatterns("/swagger-ui.html");
+        proxyRegistrationBean.addUrlPatterns("/swagger-ui/index.html");
         return proxyRegistrationBean;
     }
 

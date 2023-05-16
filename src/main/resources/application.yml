@@ -44,6 +44,12 @@ server:
       buffered: false
       encoding: utf-8
 
+springdoc:
+  swagger-ui:
+    tags-sorter: alpha
+    operations-sorter: alpha
+  packages-to-scan: cn.laifuzhi.template.controller
+
 management:
   server:
     port: 8081
