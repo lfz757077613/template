@@ -10,6 +10,8 @@ server:
 #  https://www.jianshu.com/p/ab054620da64
   max-http-header-size: 8KB
   tomcat:
+#    max-http-response-header-size springboot3.1新增该参数
+
 #    建立tcp连接后，等待第一次http请求收到uri的时间，超过这个时间还没有收到uri，服务端主动关闭连接
 #    如果content-length请求头比实际请求体大，也会一直阻塞直到超时，默认20000毫秒
     connection-timeout: 2s
