@@ -419,6 +419,26 @@
                         <requireJavaVersion>
                             <version>1.8.0</version>
                         </requireJavaVersion>
+                        <bannedDependencies>
+                            <excludes>
+                                <exclude>org.projectlombok:lombok:*:jar:compile</exclude>
+                                <exclude>org.projectlombok:lombok:*:jar:runtime</exclude>
+                                <exclude>log4j:log4j</exclude>
+                                <!-- reload4j是修复了漏洞的log4j -->
+                                <exclude>ch.qos.reload4j:reload4j</exclude>
+                                <exclude>org.apache.logging.log4j:log4j-core</exclude>
+                                <exclude>commons-logging:commons-logging</exclude>
+                                <exclude>org.slf4j:slf4j-nop</exclude>
+                                <exclude>org.slf4j:slf4j-jcl</exclude>
+                                <exclude>org.slf4j:slf4j-simple</exclude>
+                                <exclude>org.slf4j:slf4j-jdk14</exclude>
+                                <exclude>org.slf4j:slf4j-android</exclude>
+                                <!-- slf4j-log4j12 1.7.34之前是slf4j的log4j实现，之后版本重定向到slf4j-reload4j -->
+                                <exclude>org.slf4j:slf4j-log4j12</exclude>
+                                <!-- slf4j-reload4j是slf4j的reload4j实现 -->
+                                <exclude>org.slf4j:slf4j-reload4j</exclude>
+                            </excludes>
+                        </bannedDependencies>
                     </rules>
                 </configuration>
             </plugin>
