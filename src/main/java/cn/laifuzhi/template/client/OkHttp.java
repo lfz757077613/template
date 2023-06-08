@@ -80,7 +80,7 @@ public class OkHttp {
     public String postJson(String url, String body) {
         Request request = new Request.Builder()
                 .url(url)
-                .post(RequestBody.create(JSON_TYPE, body))
+                .post(RequestBody.create(body, JSON_TYPE))
                 .build();
         try (Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful()) {
