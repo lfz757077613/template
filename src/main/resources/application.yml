@@ -16,13 +16,15 @@ server:
 #    如果content-length请求头比实际请求体大，也会一直阻塞直到超时，默认20000毫秒
     connection-timeout: 2s
 #    默认取connection-timeout，空闲连接超时时间，超过这个时间还没有后续的http请求，服务端主动关闭连接
+#    nginx对该参数的解释(https://nginx.org/en/docs/http/ngx_http_upstream_module.html#keepalive_timeout)：Closing connections periodically is necessary to free per-connection memory allocations. Therefore, using too high maximum number of requests could result in excessive memory usage and not recommended.
     keep-alive-timeout: 30s
 #    一个keep-alive的连接最多处理请求个数，默认100，也就是超过100个请求连接就关了
 #    服务端到达100次时会在响应头里增加Connection:close并关闭连接，所以最好客户端识别后主动关闭连接(可能会有双端同时发fin的情况)
 #    如果客户端头铁继续发请求，服务端返回rst
-#    nginx对该参数的解释(https://nginx.org/en/docs/http/ngx_http_upstream_module.html#keepalive_timeout)：Closing connections periodically is necessary to free per-connection memory allocations. Therefore, using too high maximum number of requests could result in excessive memory usage and not recommended.
     max-keep-alive-requests: 100
     max-connections: 10240
+#   协议处理程序缓存处理器对象以提高性能。此设置决定了这些对象中有多少被缓存。 -1表示无限制，默认为200。如果不使用 Servlet 3.0 异步处理，一个好的默认值是使用与 maxThreads 设置相同的值。如果使用 Servlet 3.0 异步处理，一个好的默认值是使用 maxThreads 和最大预期并发请求数（同步和异步）中的较大者。
+    processor-cache: 500
     threads:
       min-spare: 100
       max: 500

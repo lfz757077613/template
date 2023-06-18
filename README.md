@@ -100,6 +100,7 @@ http {
         # max_fails默认1，fail_timeout默认10秒，代表默认有一次失败就屏蔽10秒
         server docker.for.mac.host.internal:8080 max_fails=1 fail_timeout=10s; 
         check interval=1000 rise=1 fall=1 timeout=1000 type=http;
+        # check_http_send "HEAD / HTTP/1.1\r\nConnection: keep-alive\r\n\r\n";
         check_http_send "GET /template/healthCheck HTTP/1.0\r\n\r\n";
         check_http_expect_alive http_2xx;
         # 最大空闲连接数 https://nginx.org/en/docs/http/ngx_http_upstream_module.html#keepalive
