@@ -439,8 +439,23 @@
                                 <exclude>org.slf4j:slf4j-reload4j</exclude>
                             </excludes>
                         </bannedDependencies>
+                        <banDuplicateClasses>
+                            <ignoreClasses>
+                                <ignoreClass>javax.*</ignoreClass>
+                                <ignoreClass>org.junit.*</ignoreClass>
+                            </ignoreClasses>
+                            <findAllDuplicates>true</findAllDuplicates>
+                        </banDuplicateClasses>
                     </rules>
                 </configuration>
+                <!-- https://www.mojohaus.org/extra-enforcer-rules/index.html -->
+                <dependencies>
+                    <dependency>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>extra-enforcer-rules</artifactId>
+                        <version>1.6.2</version>
+                    </dependency>
+                </dependencies>
             </plugin>
 
             <plugin>
