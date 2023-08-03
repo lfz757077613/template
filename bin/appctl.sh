@@ -20,8 +20,9 @@ start ()
 {
   # java -XX:+PrintFlagsInitial 可以看jvm默认参数
   # 即使是在容器环境也不建议使用这两个参数，仍然建议硬编码控制内存UseContainerSupport MaxRAMPercentage https://blog.arkey.fr/2020/10/27/maxrampercentage-is-not-what-i-wished-for/
+  # g1 https://blog.51cto.com/u_11812624/5464464
     SERVICE_OPTS="-server -jar -Xms8g -Xmx8g -XX:MaxDirectMemorySize=10g -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=512m -XX:+AlwaysPreTouch -XX:-UseBiasedLocking"
-    SERVICE_OPTS="${SERVICE_OPTS} -XX:+UseG1GC -XX:+DisableExplicitGC -Xloggc:${LOG_PATH}/gc_%p_%t.log"
+    SERVICE_OPTS="${SERVICE_OPTS} -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:InitiatingHeapOccupancyPercent=60 -XX:+DisableExplicitGC -Xloggc:${LOG_PATH}/gc_%p_%t.log"
     SERVICE_OPTS="${SERVICE_OPTS} -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintAdaptiveSizePolicy"
     SERVICE_OPTS="${SERVICE_OPTS} -XX:+PrintReferenceGC -XX:+PrintHeapAtGC -XX:+PrintTenuringDistribution"
     SERVICE_OPTS="${SERVICE_OPTS} -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=5 -XX:GCLogFileSize=30m"
