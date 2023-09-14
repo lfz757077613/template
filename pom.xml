@@ -50,6 +50,7 @@
         <common-cli.version>1.4</common-cli.version>
         <commons-collections4.version>4.4</commons-collections4.version>
         <commons-net.version>3.9.0</commons-net.version>
+        <commons-io.version>2.13.0</commons-io.version>
         <fastjson.version>1.2.78</fastjson.version>
         <pf4j.version>3.6.0</pf4j.version>
         <!-- spring-boot-starter-parent中没设置的插件 -->
@@ -294,6 +295,12 @@
             <groupId>commons-net</groupId>
             <artifactId>commons-net</artifactId>
             <version>${commons-net.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${commons-io.version}</version>
         </dependency>
 
         <dependency>

@@ -8,6 +8,9 @@ server:
     min-response-size: 2KB
 #  http请求头大小默认8k，每个请求会根据这个参数作为大小初始化字节数组，所以该参数过大在大并发时可能造成oom，所以不要盲目调大
 #  https://www.jianshu.com/p/ab054620da64
+#  四个受支持的嵌入式 Web 服务器的处理方式不一致。当使用 Jetty、Netty 或 Undertow 时，它将配置最大 HTTP 请求标头大小。使用 Tomcat 时，它将配置最大 HTTP 请求和响应标头大小
+#  springboot3.0之后更改为max-http-request-header-size只设置请求头大小
+#  https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide
   max-http-header-size: 8KB
   tomcat:
 #    max-http-response-header-size springboot3.1新增该参数
@@ -124,7 +127,7 @@ spring:
 #    date-format: yyyy-MM-dd HH:mm:ss
 #    time-zone: GMT+8
 #  datasource:
-#    url: ${mysql.url}?useUnicode=true&characterEncoding=UTF-8
+#    url: ${mysql.url}?socketTimeout=300000&connectTimeout=5000&connectionTimeZone=%2B08%3A00&preserveInstants=false&forceConnectionTimeZoneToSession=true
 #    username: ${mysql.username}
 #    password: ${mysql.password}
 #    hikari使用固定大小的连接池
