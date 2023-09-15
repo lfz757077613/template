@@ -26,6 +26,7 @@ public class ReqHandler extends SimpleChannelInboundHandler<Req> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext context, Req req) {
+        context.write()
         if (stopped.get()) {
             // 可以把关闭连接改为返回一个已关闭响应
             context.close();

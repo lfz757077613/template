@@ -85,6 +85,7 @@ public class NonRestfulController {
         return ResponseEntity.ok().headers(headers).body(body);
     }
 
+    // https://tomcat.apache.org/tomcat-10.1-doc/aio.html
     @PostMapping("zeroCopyDownload")
     public void zeroCopyDownload(@Valid BaseReq baseReq, HttpServletRequest request, HttpServletResponse response) throws IOException {
         String filePath = "xxx";
@@ -97,7 +98,7 @@ public class NonRestfulController {
         response.setContentLengthLong(file.toFile().length());
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(fileName, Charsets.UTF_8).build().toString());
         // 通过start/end可以实现零拷贝分片下载
-        request.setAttribute(Constants.SENDFILE_FILENAME_ATTR, filePath);
+        request.setAttribute(Constants.SENDFILE_FILENAME_ATTR, file.toFile().getCanonicalPath());
         request.setAttribute(Constants.SENDFILE_FILE_START_ATTR, 0L);
         request.setAttribute(Constants.SENDFILE_FILE_END_ATTR, file.toFile().length());
     }
