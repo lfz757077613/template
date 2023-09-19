@@ -52,3 +52,13 @@ CREATE TABLE IF NOT EXISTS `order_info`
     UNIQUE KEY `uk_order_id` (`order_id`),
     INDEX `idx_uid` (`uid`)
 ) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT ='订单信息表';
+
+CREATE TABLE IF NOT EXISTS `json_test`
+(
+    `id`          bigint unsigned     NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `lock_key`    varchar(128)        NOT NULL COMMENT '加锁的key',
+    `json_str`    json       NOT NULL COMMENT 'json',
+    `create_ts`   datetime(3)         NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_lock_key` (`lock_key`)
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin

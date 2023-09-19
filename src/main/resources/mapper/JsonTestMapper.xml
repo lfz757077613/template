@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.alibaba.messaging.ops2.dao.JsonTestDao">
+
+    <select id="select" resultType="com.alibaba.messaging.ops2.model.PO.JsonTestPO">
+        select id,
+        lock_key as lockKey,
+        json_str as jsonStr,
+        create_ts as createTs
+        from json_test
+        where lock_key=#{lockKey}
+        limit 1
+    </select>
+</mapper>
