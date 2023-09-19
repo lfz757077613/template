@@ -58,6 +58,8 @@
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
         <maven-checkstyle-plugin.version>3.2.2</maven-checkstyle-plugin.version>
         <dockerfile-maven-plugin.version>1.4.13</dockerfile-maven-plugin.version>
+        <!-- 代码混淆插件 -->
+        <proguard-maven-plugin.version>2.6.0</proguard-maven-plugin.version>
     </properties>
 
     <dependencyManagement>

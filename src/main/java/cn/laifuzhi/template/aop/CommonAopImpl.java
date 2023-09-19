@@ -71,7 +71,7 @@ public class CommonAopImpl {
 
     private void recordHistory(HttpServletRequest servletRequest, CommonAop commonAop, BaseReq req, Object result, long start) {
         try {
-            log.info("CommonAop url:{} ip:{} cost:{} req:{} result:{}",
+            log.info("CommonAop url:{} ip:{} cost:{}ms req:{} result:{}",
                     servletRequest.getRequestURI(),
                     servletRequest.getRemoteHost(),
                     System.currentTimeMillis() - start,
