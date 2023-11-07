@@ -1,6 +1,8 @@
-package cn.laifuzhi.template.aop;
+package com.alibaba.messaging.ops2.aop;
 
+import com.alibaba.buc.sso.client.vo.BucSSOUser;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.messaging.ops2.client.AclClient;
 import com.alibaba.messaging.ops2.dao.OperatorHistoryDao;
 import com.alibaba.messaging.ops2.filter.CommonFilter;
 import com.alibaba.messaging.ops2.model.PO.OperatorHistoryPO;
@@ -9,16 +11,20 @@ import com.alibaba.messaging.ops2.model.req.BaseReq;
 import com.alibaba.messaging.ops2.model.resp.Resp;
 import com.alibaba.messaging.ops2.utils.CommonContext;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.async.DeferredResult;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+
+import static com.alibaba.messaging.ops2.utils.Utils.indexOf;
 
 /**
  * @see CommonContext
@@ -28,35 +34,42 @@ import javax.servlet.http.HttpServletRequest;
 @Aspect
 @Component
 public class CommonAopImpl {
+    private static final String ACL_WRITE_PERMISSION = "mq-ops-vpc-write";
     @Resource
     private OperatorHistoryDao historyDao;
+    @Resource
+    private AclClient aclClient;
 
     @Around("@annotation(commonAop)")
     private Object process(ProceedingJoinPoint pjp, CommonAop commonAop) {
         long start = System.currentTimeMillis();
+        Method method = ((MethodSignature) pjp.getSignature()).getMethod();
+        ParameterizedType returnType = (ParameterizedType) method.getGenericReturnType();
+        if (returnType.getRawType() != Resp.class && returnType.getRawType() != DeferredResult.class) {
+            return Resp.fail("return type wrong, only support Resp and DeferredResult");
+        }
+        if (returnType.getRawType() == DeferredResult.class && returnType.getActualTypeArguments()[0] != Resp.class) {
+            return Resp.fail("return type wrong, DeferredResult only support DeferredResult<Resp>");
+        }
+        int baseReqIndex = indexOf(method.getParameterTypes(), BaseReq.class::isAssignableFrom);
+        if (baseReqIndex < 0) {
+            return Resp.fail("param type wrong, no BaseReq");
+        }
+        BaseReq req = (BaseReq) pjp.getArgs()[baseReqIndex];
+
         CommonContext commonContext = CommonContext.get();
         HttpServletRequest servletRequest = commonContext.getServletReq();
-        if (ArrayUtils.getLength(pjp.getArgs()) == 0 || !(pjp.getArgs()[0] instanceof BaseReq)) {
-            return Resp.fail("BaseReq error");
-        }
-        BaseReq req = (BaseReq) pjp.getArgs()[0];
         req.setEmpId(commonContext.getEmpId());
         req.setEmpName(commonContext.getEmpName());
         try {
-            Object result = pjp.proceed();
-            if (result != null && !(result instanceof Resp) && !(result instanceof DeferredResult)) {
-                log.error("return type wrong, only support void, Resp and DeferredResult<Resp>");
-                return result;
+            BucSSOUser bucSSOUser = commonContext.getBucSSOUser();
+            if (bucSSOUser != null && commonAop.recordHistory() != RecordOperateEnum.NONE && !aclClient.checkPermission(bucSSOUser, ACL_WRITE_PERMISSION)) {
+                return Resp.nonePerm(ACL_WRITE_PERMISSION);
             }
+            Object result = pjp.proceed();
             if (result instanceof DeferredResult) {
-                ((DeferredResult<?>) result).onCompletion(() -> {
-                    Object realResult = ((DeferredResult<?>) result).getResult();
-                    if (!(realResult instanceof Resp)) {
-                        log.error("DeferredResult only support DeferredResult<Resp>");
-                        return;
-                    }
-                    recordHistory(servletRequest, commonAop, req, realResult, start);
-                });
+                DeferredResult<?> deferredResult = (DeferredResult<?>) result;
+                deferredResult.onCompletion(() -> recordHistory(servletRequest, commonAop, req, deferredResult.getResult(), start));
                 return result;
             }
             recordHistory(servletRequest, commonAop, req, result, start);
