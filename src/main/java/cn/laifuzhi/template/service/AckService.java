@@ -2,6 +2,7 @@
 //
 //import com.alibaba.fastjson.JSON;
 //import com.alibaba.messaging.ops2.Application;
+//import com.alibaba.messaging.ops2.client.LockClient;
 //import com.alibaba.messaging.ops2.dao.AckInfoDao;
 //import com.alibaba.messaging.ops2.model.OpsException;
 //import com.alibaba.messaging.ops2.model.PO.AckInfoPO;
@@ -26,6 +27,7 @@
 //import org.apache.commons.lang3.math.NumberUtils;
 //import org.springframework.stereotype.Service;
 //import org.yaml.snakeyaml.Yaml;
+//import org.yaml.snakeyaml.constructor.SafeConstructor;
 //
 //import javax.annotation.Resource;
 //import java.io.BufferedReader;
@@ -41,12 +43,14 @@
 //import java.util.Optional;
 //import java.util.TreeMap;
 //import java.util.concurrent.ConcurrentMap;
+//import java.util.concurrent.Semaphore;
 //import java.util.concurrent.TimeUnit;
 //import java.util.concurrent.locks.ReadWriteLock;
 //import java.util.concurrent.locks.ReentrantReadWriteLock;
 //import java.util.function.Consumer;
 //import java.util.stream.Collectors;
 //
+//import static com.alibaba.messaging.ops2.utils.Const.LockKey.ACK_UPGRADE_PRE;
 //import static com.alibaba.messaging.ops2.utils.Utils.joinParamComma;
 //import static com.alibaba.messaging.ops2.utils.Utils.splitComma;
 //import static com.alibaba.messaging.ops2.utils.Utils.splitHyphen;
@@ -63,6 +67,7 @@
 //    private static final String HELM_CHART_LIST = "helm search repo %s/%s -l -o json";
 //    private static final String HELM_LIST = "helm list --kubeconfig %s -d -r -o json -m 99999";
 //    private static final String HELM_LIST_BY_FILTER = "helm list --kubeconfig %s -d -r -o json --filter ^%s$";
+//    private static final String HELM_LIST_BY_FILTER_PRE = "helm list --kubeconfig %s -d -r -o json --filter ^%s";
 //    private static final String HELM_INSTALL = "helm install --kubeconfig %s %s %s/%s --description %s %s %s %s";
 //    private static final String HELM_UNINSTALL = "helm uninstall --kubeconfig %s %s";
 //    private static final String HELM_GET_VALUES = "helm get values --kubeconfig %s %s";
@@ -76,24 +81,30 @@
 //    private static final String KUBECTL_GET_SVC_LIST = "kubectl get svc --kubeconfig %s -l app.kubernetes.io/instance=%s,app.kubernetes.io/name=%s -o wide --show-labels";
 //    private static final String KUBECTL_GET_POD_LIST = "kubectl get pods --kubeconfig %s -l app.kubernetes.io/instance=%s,app.kubernetes.io/name=%s -o wide --show-labels";
 //    private static final String KUBECTL_GET_PVC_LIST = "kubectl get pvc --kubeconfig %s -l app.kubernetes.io/instance=%s,app.kubernetes.io/name=%s -o wide --show-labels";
+//    private static final String KUBECTL_GET_PVC_LIST_NONE_LABEL = "kubectl get pvc --kubeconfig %s -l app.kubernetes.io/name=%s,!%s -o wide --show-labels";
 //    private static final String KUBECTL_DESCRIBE_POD = "kubectl describe pod --kubeconfig %s %s";
 //    private static final String KUBECTL_DELETE_POD = "kubectl delete pod --kubeconfig %s %s --wait=false";
 //    private static final String KUBECTL_DELETE_PVC = "kubectl delete pvc --kubeconfig %s -l app.kubernetes.io/instance=%s --wait=false";
 //    private static final String KUBECTL_ROLLOUT_STATUS_DEPLOY = "kubectl rollout status deploy --kubeconfig %s %s";
 //    private static final String KUBECTL_ROLLOUT_STATUS_STS = "kubectl rollout status sts --kubeconfig %s %s";
+//    private static final String KUBECTL_LABEL_PVC = "kubectl label pvc --kubeconfig %s %s %s %s=%s";
 //    private static final String KUBECTL_PATCH_PVC = "kubectl patch pvc --kubeconfig %s %s -p {\"spec\":{\"resources\":{\"requests\":{\"storage\":\"%s\"}}}}";
 //
 //    @Resource
 //    private AckInfoDao ackInfoDao;
+//    @Resource
+//    private LockClient lockClient;
 //
-//    private ConcurrentMap<String, ReentrantReadWriteLock> valuesLockMap = Maps.newConcurrentMap();
-//    private ConcurrentMap<String, ReentrantReadWriteLock> kubeconfigLockMap = Maps.newConcurrentMap();
+//    private final ConcurrentMap<String, ReentrantReadWriteLock> kubeconfigLockMap = Maps.newConcurrentMap();
+//    // helm进程消耗大量内存，所以为了避免操作系统oom-kill，通过信号量限制并发度，并且一个helm进程基本要消耗一个核，所以并发度设置成核数
+//    // kubectl经过压测，cpu跑满也不会造成oom-kill，所以无需限制
+//    private final Semaphore helmSemaphore = new Semaphore(Runtime.getRuntime().availableProcessors());
 //
 //    private Tuple<ReadWriteLock, AckInfoPO> kubeconfigTuple(String ackId) {
 //        Optional<AckInfoPO> ackInfoOptional = ackInfoDao.select(ackId);
 //        if (!ackInfoOptional.isPresent()) {
-//            log.error("kubeconfigLock not support ack:{}", ackId);
-//            throw new OpsException(String.format("kubeconfigLock not support ack:%s", ackId));
+//            log.error("kubeconfigLock unsupported ack:{}", ackId);
+//            throw new OpsException(String.format("kubeconfigLock unsupported ack:%s", ackId));
 //        }
 //        ReentrantReadWriteLock lock = kubeconfigLockMap.computeIfAbsent(ackId, ignore -> new ReentrantReadWriteLock());
 //        return new Tuple<>(lock, ackInfoOptional.get());
@@ -142,23 +153,38 @@
 //    }
 //
 //    protected synchronized String helmRepoAdd(String repoName, String chartNamespace, String helmUserName, String helmPassword) {
-//        return ExecUtils.exec(String.format(HELM_BROKER_REPO_ADD,
-//                helmUserName,
-//                helmPassword,
-//                repoName,
-//                chartNamespace,
-//                repoName,
-//                helmUserName,
-//                helmPassword));
+//        helmSemaphore.acquireUninterruptibly();
+//        try {
+//            return ExecUtils.exec(String.format(HELM_BROKER_REPO_ADD,
+//                    helmUserName,
+//                    helmPassword,
+//                    repoName,
+//                    chartNamespace,
+//                    repoName,
+//                    helmUserName,
+//                    helmPassword));
+//        } finally {
+//            helmSemaphore.release();
+//        }
 //    }
 //
 //    protected void helmRepoUpdate(String repo) {
-//        ExecUtils.exec(String.format(HELM_REPO_UPDATE, repo));
+//        helmSemaphore.acquireUninterruptibly();
+//        try {
+//            ExecUtils.exec(String.format(HELM_REPO_UPDATE, repo));
+//        } finally {
+//            helmSemaphore.release();
+//        }
 //    }
 //
 //    protected List<HelmChart> helmChartList(String repoName, String chartName) {
-//        String helmChartResult = ExecUtils.exec(String.format(HELM_CHART_LIST, repoName, chartName));
-//        return ListUtils.emptyIfNull(JSON.parseArray(helmChartResult, HelmChart.class));
+//        helmSemaphore.acquireUninterruptibly();
+//        try {
+//            String helmChartResult = ExecUtils.exec(String.format(HELM_CHART_LIST, repoName, chartName));
+//            return ListUtils.emptyIfNull(JSON.parseArray(helmChartResult, HelmChart.class));
+//        } finally {
+//            helmSemaphore.release();
+//        }
 //    }
 //
 //    protected List<HelmRelease> helmReleaseList(String ackId) {
@@ -167,8 +193,33 @@
 //        AckInfoPO ackInfoPO = tuple.getT2();
 //        lock.readLock().lock();
 //        try {
-//            String helmListResult = ExecUtils.exec(String.format(HELM_LIST, kubeconfigPathWithLock(lock, ackInfoPO)));
-//            return ListUtils.emptyIfNull(JSON.parseArray(helmListResult, HelmRelease.class));
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            helmSemaphore.acquireUninterruptibly();
+//            try {
+//                String helmListResult = ExecUtils.exec(String.format(HELM_LIST, kubeconfigPath));
+//                return ListUtils.emptyIfNull(JSON.parseArray(helmListResult, HelmRelease.class));
+//            } finally {
+//                helmSemaphore.release();
+//            }
+//        } finally {
+//            lock.readLock().unlock();
+//        }
+//    }
+//
+//    public List<HelmRelease> helmReleaseList(String ackId, String releaseNamePre) {
+//        Tuple<ReadWriteLock, AckInfoPO> tuple = kubeconfigTuple(ackId);
+//        ReadWriteLock lock = tuple.getT1();
+//        AckInfoPO ackInfoPO = tuple.getT2();
+//        lock.readLock().lock();
+//        try {
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            helmSemaphore.acquireUninterruptibly();
+//            try {
+//                String helmListResult = ExecUtils.exec(String.format(HELM_LIST_BY_FILTER_PRE, kubeconfigPath, releaseNamePre));
+//                return ListUtils.emptyIfNull(JSON.parseArray(helmListResult, HelmRelease.class));
+//            } finally {
+//                helmSemaphore.release();
+//            }
 //        } finally {
 //            lock.readLock().unlock();
 //        }
@@ -180,15 +231,21 @@
 //        AckInfoPO ackInfoPO = tuple.getT2();
 //        lock.readLock().lock();
 //        try {
-//            String helmListResult = ExecUtils.exec(String.format(HELM_LIST_BY_FILTER, kubeconfigPathWithLock(lock, ackInfoPO), releaseName));
-//            List<HelmRelease> helmReleaseList = JSON.parseArray(helmListResult, HelmRelease.class);
-//            if (CollectionUtils.size(helmReleaseList) > 1) {
-//                throw new OpsException("helmRelease release gt 1 " + releaseName);
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            helmSemaphore.acquireUninterruptibly();
+//            try {
+//                String helmListResult = ExecUtils.exec(String.format(HELM_LIST_BY_FILTER, kubeconfigPath, releaseName));
+//                List<HelmRelease> helmReleaseList = JSON.parseArray(helmListResult, HelmRelease.class);
+//                if (CollectionUtils.size(helmReleaseList) > 1) {
+//                    throw new OpsException("helmRelease release gt 1 " + releaseName);
+//                }
+//                if (CollectionUtils.isEmpty(helmReleaseList)) {
+//                    return Optional.empty();
+//                }
+//                return Optional.of(helmReleaseList.get(0));
+//            } finally {
+//                helmSemaphore.release();
 //            }
-//            if (CollectionUtils.isEmpty(helmReleaseList)) {
-//                return Optional.empty();
-//            }
-//            return Optional.of(helmReleaseList.get(0));
 //        } finally {
 //            lock.readLock().unlock();
 //        }
@@ -200,7 +257,13 @@
 //        AckInfoPO ackInfoPO = tuple.getT2();
 //        lock.readLock().lock();
 //        try {
-//            return ExecUtils.exec(String.format(HELM_GET_VALUES, kubeconfigPathWithLock(lock, ackInfoPO), releaseName));
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            helmSemaphore.acquireUninterruptibly();
+//            try {
+//                return ExecUtils.exec(String.format(HELM_GET_VALUES, kubeconfigPath, releaseName));
+//            } finally {
+//                helmSemaphore.release();
+//            }
 //        } finally {
 //            lock.readLock().unlock();
 //        }
@@ -212,29 +275,35 @@
 //        AckInfoPO ackInfoPO = tuple.getT2();
 //        lock.readLock().lock();
 //        try {
-//            String setting = StringUtils.EMPTY;
-//            if (MapUtils.isNotEmpty(settingMap)) {
-//                setting = String.join(StringUtils.SPACE, "--set", joinParamComma(settingMap));
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            helmSemaphore.acquireUninterruptibly();
+//            try {
+//                String setting = StringUtils.EMPTY;
+//                if (MapUtils.isNotEmpty(settingMap)) {
+//                    setting = String.join(StringUtils.SPACE, "--set", joinParamComma(settingMap));
+//                }
+//                String stringSetting = StringUtils.EMPTY;
+//                if (MapUtils.isNotEmpty(stringSettingMap)) {
+//                    stringSetting = String.join(StringUtils.SPACE, "--set-string", joinParamComma(stringSettingMap));
+//                }
+//                String chartVersion = StringUtils.EMPTY;
+//                if (StringUtils.isNotBlank(chartVersionParam)) {
+//                    chartVersion = String.join(StringUtils.SPACE, "--version", chartVersionParam);
+//                }
+//                ExecUtils.execQuota(
+//                        String.format(HELM_INSTALL,
+//                                kubeconfigPath,
+//                                releaseName,
+//                                repoName,
+//                                chartName,
+//                                description,
+//                                setting,
+//                                stringSetting,
+//                                chartVersion)
+//                );
+//            } finally {
+//                helmSemaphore.release();
 //            }
-//            String stringSetting = StringUtils.EMPTY;
-//            if (MapUtils.isNotEmpty(stringSettingMap)) {
-//                stringSetting = String.join(StringUtils.SPACE, "--set-string", joinParamComma(stringSettingMap));
-//            }
-//            String chartVersion = StringUtils.EMPTY;
-//            if (StringUtils.isNotBlank(chartVersionParam)) {
-//                chartVersion = String.join(StringUtils.SPACE, "--version", chartVersionParam);
-//            }
-//            ExecUtils.execQuota(
-//                    String.format(HELM_INSTALL,
-//                            kubeconfigPathWithLock(lock, ackInfoPO),
-//                            releaseName,
-//                            repoName,
-//                            chartName,
-//                            description,
-//                            setting,
-//                            stringSetting,
-//                            chartVersion)
-//            );
 //        } finally {
 //            lock.readLock().unlock();
 //        }
@@ -246,16 +315,24 @@
 //        AckInfoPO ackInfoPO = tuple.getT2();
 //        lock.readLock().lock();
 //        try {
-//            ExecUtils.exec(String.format(HELM_UNINSTALL, kubeconfigPathWithLock(lock, ackInfoPO), releaseName));
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            helmSemaphore.acquireUninterruptibly();
+//            try {
+//                ExecUtils.exec(String.format(HELM_UNINSTALL, kubeconfigPath, releaseName));
+//            } finally {
+//                helmSemaphore.release();
+//            }
 //        } finally {
 //            lock.readLock().unlock();
 //        }
 //    }
 //
 //    protected void helmUpgrade(String ackId, String releaseName, String repoName, String chartName, String description, String chartVersion, Consumer<Map<Object, Object>> valuesConsumer) {
-//        String lockKey = String.join(":", ackId, releaseName);
-//        ReentrantReadWriteLock releaseLock = valuesLockMap.computeIfAbsent(lockKey, ignore -> new ReentrantReadWriteLock());
-//        releaseLock.writeLock().lock();
+//        String lockKey = ACK_UPGRADE_PRE + String.join("_", ackId, releaseName);
+//        Optional<Long> lock = lockClient.tryLock(lockKey, 300);
+//        if (!lock.isPresent()) {
+//            throw new OpsException("multiple upgrade");
+//        }
 //        try {
 //            if (StringUtils.isBlank(chartVersion)) {
 //                Optional<HelmRelease> releaseOptional = helmRelease(ackId, releaseName);
@@ -265,7 +342,7 @@
 //                chartVersion = StringUtils.remove(releaseOptional.get().getChart(), chartName + "-");
 //            }
 //            File valuesYaml = Paths.get(Application.applicationPath(), ackId, releaseName + ".yaml").toFile();
-//            Yaml yaml = new Yaml();
+//            Yaml yaml = new Yaml(new SafeConstructor());
 //            String values = helmValues(ackId, releaseName);
 //            Map<Object, Object> yamlMap = MapUtils.emptyIfNull(yaml.load(values));
 //            valuesConsumer.accept(yamlMap);
@@ -276,16 +353,22 @@
 //            AckInfoPO ackInfoPO = tuple.getT2();
 //            kubeconfigLock.readLock().lock();
 //            try {
-//                ExecUtils.execQuota(
-//                        String.format(HELM_UPGRADE,
-//                                kubeconfigPathWithLock(kubeconfigLock, ackInfoPO),
-//                                releaseName,
-//                                repoName,
-//                                chartName,
-//                                description,
-//                                valuesYaml.getCanonicalPath(),
-//                                chartVersion)
-//                );
+//                String kubeconfigPath = kubeconfigPathWithLock(kubeconfigLock, ackInfoPO);
+//                helmSemaphore.acquireUninterruptibly();
+//                try {
+//                    ExecUtils.execQuota(
+//                            String.format(HELM_UPGRADE,
+//                                    kubeconfigPath,
+//                                    releaseName,
+//                                    repoName,
+//                                    chartName,
+//                                    description,
+//                                    valuesYaml.getCanonicalPath(),
+//                                    chartVersion)
+//                    );
+//                } finally {
+//                    helmSemaphore.release();
+//                }
 //            } finally {
 //                kubeconfigLock.readLock().unlock();
 //            }
@@ -295,7 +378,7 @@
 //            log.error("helmUpgrade error release:{}", releaseName, e);
 //            throw new OpsException("helmUpgrade error", e);
 //        } finally {
-//            releaseLock.writeLock().unlock();
+//            lockClient.release(lockKey, lock.get());
 //        }
 //    }
 //
@@ -305,11 +388,17 @@
 //        AckInfoPO ackInfoPO = tuple.getT2();
 //        lock.readLock().lock();
 //        try {
-//            String helmHistoryResult = ExecUtils.exec(String.format(HELM_HISTORY, kubeconfigPathWithLock(lock, ackInfoPO), releaseName));
-//            List<HelmHistory> result = ListUtils.emptyIfNull(JSON.parseArray(helmHistoryResult, HelmHistory.class));
-//            // 按照updated倒序
-//            result.sort(Comparator.comparing(HelmHistory::getUpdated).reversed());
-//            return result;
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            helmSemaphore.acquireUninterruptibly();
+//            try {
+//                String helmHistoryResult = ExecUtils.exec(String.format(HELM_HISTORY, kubeconfigPath, releaseName));
+//                List<HelmHistory> result = ListUtils.emptyIfNull(JSON.parseArray(helmHistoryResult, HelmHistory.class));
+//                // 按照updated倒序
+//                result.sort(Comparator.comparing(HelmHistory::getUpdated).reversed());
+//                return result;
+//            } finally {
+//                helmSemaphore.release();
+//            }
 //        } finally {
 //            lock.readLock().unlock();
 //        }
@@ -321,11 +410,8 @@
 //        AckInfoPO ackInfoPO = tuple.getT2();
 //        lock.readLock().lock();
 //        try {
-//            String statefulSetListResult = ExecUtils.exec(
-//                    String.format(KUBECTL_GET_STS_LIST,
-//                            kubeconfigPathWithLock(lock, ackInfoPO),
-//                            nameLabel)
-//            );
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            String statefulSetListResult = ExecUtils.exec(String.format(KUBECTL_GET_STS_LIST, kubeconfigPath, nameLabel));
 //            List<String> lines = new BufferedReader(new StringReader(statefulSetListResult))
 //                    .lines()
 //                    .collect(Collectors.toList());
@@ -361,11 +447,8 @@
 //        AckInfoPO ackInfoPO = tuple.getT2();
 //        lock.readLock().lock();
 //        try {
-//            String deployListResult = ExecUtils.exec(
-//                    String.format(KUBECTL_GET_DEPLOY_LIST,
-//                            kubeconfigPathWithLock(lock, ackInfoPO),
-//                            nameLabel)
-//            );
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            String deployListResult = ExecUtils.exec(String.format(KUBECTL_GET_DEPLOY_LIST, kubeconfigPath, nameLabel));
 //            List<String> lines = new BufferedReader(new StringReader(deployListResult))
 //                    .lines()
 //                    .collect(Collectors.toList());
@@ -404,11 +487,8 @@
 //        AckInfoPO ackInfoPO = tuple.getT2();
 //        lock.readLock().lock();
 //        try {
-//            String statefulSetListResult = ExecUtils.exec(
-//                    String.format(KUBECTL_GET_STS,
-//                            stsName,
-//                            kubeconfigPathWithLock(lock, ackInfoPO))
-//            );
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            String statefulSetListResult = ExecUtils.exec(String.format(KUBECTL_GET_STS, stsName, kubeconfigPath));
 //            List<String> lines = new BufferedReader(new StringReader(statefulSetListResult))
 //                    .lines()
 //                    .collect(Collectors.toList());
@@ -442,11 +522,8 @@
 //        AckInfoPO ackInfoPO = tuple.getT2();
 //        lock.readLock().lock();
 //        try {
-//            String deployListResult = ExecUtils.exec(
-//                    String.format(KUBECTL_GET_DEPLOY,
-//                            deployName,
-//                            kubeconfigPathWithLock(lock, ackInfoPO))
-//            );
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            String deployListResult = ExecUtils.exec(String.format(KUBECTL_GET_DEPLOY, deployName, kubeconfigPath));
 //            List<String> lines = new BufferedReader(new StringReader(deployListResult))
 //                    .lines()
 //                    .collect(Collectors.toList());
@@ -483,12 +560,8 @@
 //        AckInfoPO ackInfoPO = tuple.getT2();
 //        lock.readLock().lock();
 //        try {
-//            String serviceListResult = ExecUtils.exec(
-//                    String.format(KUBECTL_GET_SVC_LIST,
-//                            kubeconfigPathWithLock(lock, ackInfoPO),
-//                            instanceLabel,
-//                            nameLabel)
-//            );
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            String serviceListResult = ExecUtils.exec(String.format(KUBECTL_GET_SVC_LIST, kubeconfigPath, instanceLabel, nameLabel));
 //            List<String> lines = new BufferedReader(new StringReader(serviceListResult))
 //                    .lines()
 //                    .collect(Collectors.toList());
@@ -528,12 +601,8 @@
 //        AckInfoPO ackInfoPO = tuple.getT2();
 //        lock.readLock().lock();
 //        try {
-//            String podListResult = ExecUtils.exec(
-//                    String.format(KUBECTL_GET_POD_LIST,
-//                            kubeconfigPathWithLock(lock, ackInfoPO),
-//                            instanceLabel,
-//                            nameLabel)
-//            );
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            String podListResult = ExecUtils.exec(String.format(KUBECTL_GET_POD_LIST, kubeconfigPath, instanceLabel, nameLabel));
 //            List<String> lines = new BufferedReader(new StringReader(podListResult))
 //                    .lines()
 //                    .collect(Collectors.toList());
@@ -575,42 +644,58 @@
 //        AckInfoPO ackInfoPO = tuple.getT2();
 //        lock.readLock().lock();
 //        try {
-//            String pvcListResult = ExecUtils.exec(
-//                    String.format(KUBECTL_GET_PVC_LIST,
-//                            kubeconfigPathWithLock(lock, ackInfoPO),
-//                            instanceLabel,
-//                            nameLabel)
-//            );
-//            List<String> lines = new BufferedReader(new StringReader(pvcListResult))
-//                    .lines()
-//                    .collect(Collectors.toList());
-//            if (CollectionUtils.size(lines) <= 1) {
-//                return Collections.emptyList();
-//            }
-//            List<PvcInfo> result = Lists.newArrayList();
-//            for (int i = 1; i < lines.size(); i++) {
-//                String line = lines.get(i);
-//                List<String> items = splitSpace(line);
-//                if (CollectionUtils.size(items) != 9) {
-//                    log.error("ackPvcList format error ack:{} instanceLabel:{} line:{}", ackId, instanceLabel, line);
-//                    throw new OpsException("ackPvcList format error");
-//                }
-//                PvcInfo pvcInfo = new PvcInfo();
-//                pvcInfo.setName(items.get(0));
-//                pvcInfo.setStatus(items.get(1));
-//                pvcInfo.setVolume(items.get(2));
-//                pvcInfo.setCapacity(items.get(3));
-//                pvcInfo.setAccessModes(items.get(4));
-//                pvcInfo.setStorageClass(items.get(5));
-//                pvcInfo.setAge(items.get(6));
-//                pvcInfo.setVolumeModes(items.get(7));
-//                pvcInfo.setLabels(splitComma(items.get(8)));
-//                result.add(pvcInfo);
-//            }
-//            return result;
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            return parsePvcInfo(ExecUtils.exec(String.format(KUBECTL_GET_PVC_LIST, kubeconfigPath, instanceLabel, nameLabel)));
 //        } finally {
 //            lock.readLock().unlock();
 //        }
+//    }
+//
+//    protected List<PvcInfo> ackPvcListNoneLabel(String ackId, String nameLabel, String label) {
+//        Tuple<ReadWriteLock, AckInfoPO> tuple = kubeconfigTuple(ackId);
+//        ReadWriteLock lock = tuple.getT1();
+//        AckInfoPO ackInfoPO = tuple.getT2();
+//        lock.readLock().lock();
+//        try {
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            return parsePvcInfo(ExecUtils.exec(String.format(KUBECTL_GET_PVC_LIST_NONE_LABEL, kubeconfigPath, nameLabel, label)));
+//        } finally {
+//            lock.readLock().unlock();
+//        }
+//    }
+//
+//    // vip-cn-hangzhou-pre-pipeline-log-vip-cn-hangzhou-pre-pipeline-1 Bound d-bp14yawn0fss8k7xahq7 50Gi RWO alicloud-disk-topology-essd-pl0              575d    Filesystem   app.kubernetes.io/instance=vip-cn-hangzhou-pre-pipeline,app.kubernetes.io/name=broker
+//    // vip-cn-hangzhou-pre-pipeline-log-vip-cn-hangzhou-pre-pipeline-1 Pending                               alicloud-disk-topology-essd-pl1-ssd          12h   Filesystem   app.kubernetes.io/instance=rocketmq-broker-rmq-cn-20934ooih02,app.kubernetes.io/name=rocketmq-broker
+//    private static List<PvcInfo> parsePvcInfo(String pvcListResult) {
+//        List<String> lines = new BufferedReader(new StringReader(pvcListResult))
+//                .lines()
+//                .collect(Collectors.toList());
+//        if (CollectionUtils.size(lines) <= 1) {
+//            return Collections.emptyList();
+//        }
+//        List<PvcInfo> result = Lists.newArrayList();
+//        for (int i = 1; i < lines.size(); i++) {
+//            String line = lines.get(i);
+//            List<String> items = splitSpace(line);
+//            if (CollectionUtils.size(items) != 9 && CollectionUtils.size(items) != 6) {
+//                log.error("ackPvcList format error line:{}", line);
+//                throw new OpsException("ackPvcList format error " + line);
+//            }
+//            PvcInfo pvcInfo = new PvcInfo();
+//            pvcInfo.setName(items.get(0));
+//            pvcInfo.setStatus(items.get(1));
+//            if (CollectionUtils.size(items) == 9) {
+//                pvcInfo.setVolume(items.get(2));
+//                pvcInfo.setCapacity(items.get(3));
+//                pvcInfo.setAccessModes(items.get(4));
+//            }
+//            pvcInfo.setStorageClass(items.get(items.size() - 4));
+//            pvcInfo.setAge(items.get(items.size() - 3));
+//            pvcInfo.setVolumeModes(items.get(items.size() - 2));
+//            pvcInfo.setLabels(splitComma(items.get(items.size() - 1)));
+//            result.add(pvcInfo);
+//        }
+//        return result;
 //    }
 //
 //    public String describePod(String ackId, String podName) {
@@ -619,7 +704,8 @@
 //        AckInfoPO ackInfoPO = tuple.getT2();
 //        lock.readLock().lock();
 //        try {
-//            return ExecUtils.exec(String.format(KUBECTL_DESCRIBE_POD, kubeconfigPathWithLock(lock, ackInfoPO), podName));
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            return ExecUtils.exec(String.format(KUBECTL_DESCRIBE_POD, kubeconfigPath, podName));
 //        } finally {
 //            lock.readLock().unlock();
 //        }
@@ -631,7 +717,8 @@
 //        AckInfoPO ackInfoPO = tuple.getT2();
 //        lock.readLock().lock();
 //        try {
-//            ExecUtils.exec(String.format(KUBECTL_DELETE_POD, kubeconfigPathWithLock(lock, ackInfoPO), podName));
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            ExecUtils.exec(String.format(KUBECTL_DELETE_POD, kubeconfigPath, podName));
 //        } finally {
 //            lock.readLock().unlock();
 //        }
@@ -643,7 +730,8 @@
 //        AckInfoPO ackInfoPO = tuple.getT2();
 //        lock.readLock().lock();
 //        try {
-//            ExecUtils.exec(String.format(KUBECTL_DELETE_PVC, kubeconfigPathWithLock(lock, ackInfoPO), instanceName));
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            ExecUtils.exec(String.format(KUBECTL_DELETE_PVC, kubeconfigPath, instanceName));
 //        } finally {
 //            lock.readLock().unlock();
 //        }
@@ -655,25 +743,39 @@
 //        AckInfoPO ackInfoPO = tuple.getT2();
 //        lock.readLock().lock();
 //        try {
-//            ExecUtils.exec(
-//                    String.format(KUBECTL_ROLLOUT_STATUS_DEPLOY, kubeconfigPathWithLock(lock, ackInfoPO), deployName),
-//                    TimeUnit.MINUTES.toMillis(20)
-//            );
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            ExecUtils.exec(String.format(KUBECTL_ROLLOUT_STATUS_DEPLOY, kubeconfigPath, deployName), TimeUnit.MINUTES.toMillis(20));
 //        } finally {
 //            lock.readLock().unlock();
 //        }
 //    }
 //
-//    public void waitStsFinish(String ackId, String stsName) {
+//    public void waitStsFinish(String ackId, String stsName, Integer podCount) {
+//        long timeoutMs = (podCount == null || podCount == 0) ? TimeUnit.MINUTES.toMillis(40) : TimeUnit.MINUTES.toMillis(podCount * 10L);
 //        Tuple<ReadWriteLock, AckInfoPO> tuple = kubeconfigTuple(ackId);
 //        ReadWriteLock lock = tuple.getT1();
 //        AckInfoPO ackInfoPO = tuple.getT2();
 //        lock.readLock().lock();
 //        try {
-//            ExecUtils.exec(
-//                    String.format(KUBECTL_ROLLOUT_STATUS_STS, kubeconfigPathWithLock(lock, ackInfoPO), stsName),
-//                    TimeUnit.MINUTES.toMillis(40)
-//            );
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            ExecUtils.exec(String.format(KUBECTL_ROLLOUT_STATUS_STS, kubeconfigPath, stsName), timeoutMs);
+//        } finally {
+//            lock.readLock().unlock();
+//        }
+//    }
+//
+//    public void addPvcLabel(String ackId, String pvcName, String labelName, String labelValue, boolean force) {
+//        Tuple<ReadWriteLock, AckInfoPO> tuple = kubeconfigTuple(ackId);
+//        ReadWriteLock lock = tuple.getT1();
+//        AckInfoPO ackInfoPO = tuple.getT2();
+//        lock.readLock().lock();
+//        try {
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            String overwrite = StringUtils.EMPTY;
+//            if (force) {
+//                overwrite = "--overwrite";
+//            }
+//            ExecUtils.execQuota(String.format(KUBECTL_LABEL_PVC, kubeconfigPath, pvcName, overwrite, labelName, labelValue));
 //        } finally {
 //            lock.readLock().unlock();
 //        }
@@ -686,7 +788,8 @@
 //        AckInfoPO ackInfoPO = tuple.getT2();
 //        lock.readLock().lock();
 //        try {
-//            ExecUtils.execQuota(String.format(KUBECTL_PATCH_PVC, kubeconfigPathWithLock(lock, ackInfoPO), pvcName, capacity));
+//            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
+//            ExecUtils.execQuota(String.format(KUBECTL_PATCH_PVC, kubeconfigPath, pvcName, capacity));
 //        } finally {
 //            lock.readLock().unlock();
 //        }
