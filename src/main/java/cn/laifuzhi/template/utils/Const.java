@@ -1,6 +1,7 @@
 package cn.laifuzhi.template.utils;
 
 public final class Const {
+    public static final String IP_PORT_REGEXP = "^((\\d|[1-9]\\d|1\\d{2}|2[0-4]\\d|25[0-5])\\.){3}(\\d|[1-9]\\d|1\\d{2}|2[0-4]\\d|25[0-5]):(\\d|[1-9]\\d|[1-9]\\d{2}|[1-9]\\d{3}|[1-5]\\d{4}|6[0-4]\\d{3}|65[0-4]\\d{2}|655[0-2]\\d|6553[0-5])$";
     public static final String MDC_TRACE_ID = "trace";
     public static final String MDC_UID = "uid";
     public static final String DATETIME_FORMAT = "yyyy-MM-dd HH:mm:ss:SSS";

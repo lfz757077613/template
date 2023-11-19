@@ -151,19 +151,25 @@ public class Application implements WebServerFactoryCustomizer<TomcatServletWebS
             ReentrantLock lock = new ReentrantLock();
             Condition stopCondition = lock.newCondition();
             lock.lock();
-            SpringApplication.getShutdownHandlers().add(() -> {
+            try {
+                SpringApplication.getShutdownHandlers().add(() -> {
 //                LoggingApplicationListener.registerShutdownHookIfNecessary中增加了关闭日志系统的shutdownHandler
 //                所以执行到自定义shutdownHandler时，spring容器和日志系统已经关闭了
-                lock.lock();
-                STARTED = false;
-                stopCondition.signal();
+                    lock.lock();
+                    try {
+                        STARTED = false;
+                        stopCondition.signal();
+                    } finally {
+                        lock.unlock();
+                    }
+                });
+                while (STARTED) {
+                    stopCondition.awaitUninterruptibly();
+                }
+            } finally {
+                // 之后无法使用spring容器和logback
                 lock.unlock();
-            });
-            while (STARTED) {
-                stopCondition.awaitUninterruptibly();
             }
-            // 之后无法使用spring容器和logback
-            lock.unlock();
         } catch (Throwable t) {
             t.printStackTrace();
             // 会触发spring的jvm关闭回调钩子

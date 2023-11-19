@@ -1,5 +1,6 @@
 package cn.laifuzhi.template.client;
 
+import cn.laifuzhi.template.model.MyException;
 import com.alibaba.fastjson.JSON;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import lombok.extern.slf4j.Slf4j;
@@ -63,17 +64,21 @@ public class OkHttp {
                 .url(builder.build())
                 .build();
         try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                log.error("get not success code:{} url:{} body:{}", response.code(), url, JSON.toJSONString(param));
-                return StringUtils.EMPTY;
-            }
             if (response.body() == null) {
-                return StringUtils.EMPTY;
+                log.error("get body null code:{} url:{} param:{}", response.code(), url, JSON.toJSONString(param));
+                throw new MyException("okhttp get body null");
+            }
+            String result = response.body().string();
+            if (!response.isSuccessful()) {
+                log.error("get not success code:{} url:{} param:{} result:{}", response.code(), url, JSON.toJSONString(param), result);
+                throw new MyException("okhttp get not success code:" + response.code());
             }
             return response.body().string();
-        } catch (IOException e) {
-            log.error("get error url:{} body:{}", url, JSON.toJSONString(param), e);
-            return StringUtils.EMPTY;
+        } catch (MyException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("get error url:{} param:{}", url, JSON.toJSONString(param), e);
+            throw new MyException("okhttp get error", e);
         }
     }
 
@@ -83,17 +88,21 @@ public class OkHttp {
                 .post(RequestBody.create(body, JSON_TYPE))
                 .build();
         try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                log.error("postJson not success code:{} url:{} body:{}", response.code(), url, body);
-                return StringUtils.EMPTY;
-            }
             if (response.body() == null) {
-                return StringUtils.EMPTY;
+                log.error("postJson body null code:{} url:{} param:{}", response.code(), url, JSON.toJSONString(body));
+                throw new MyException("okhttp postJson body null");
             }
-            return response.body().string();
-        } catch (IOException e) {
+            String result = response.body().string();
+            if (!response.isSuccessful()) {
+                log.error("postJson not success code:{} url:{} param:{} result:{}", response.code(), url, body, result);
+                throw new MyException("okhttp postJson not success code:" + response.code());
+            }
+            return result;
+        } catch (MyException e) {
+            throw e;
+        } catch (Exception e) {
             log.error("postJson error url:{} body:{}", url, body, e);
-            return StringUtils.EMPTY;
+            throw new MyException("okhttp postJson error", e);
         }
     }
 
@@ -109,17 +118,21 @@ public class OkHttp {
                 .post(bodyBuilder.build())
                 .build();
         try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                log.error("postForm not success code:{} url:{} param:{}", response.code(), url, JSON.toJSONString(param));
-                return StringUtils.EMPTY;
-            }
             if (response.body() == null) {
-                return StringUtils.EMPTY;
+                log.error("postForm body null code:{} url:{} param:{}", response.code(), url, JSON.toJSONString(param));
+                throw new MyException("okhttp postForm body null");
             }
-            return response.body().string();
-        } catch (IOException e) {
+            String result = response.body().string();
+            if (!response.isSuccessful()) {
+                log.error("postForm not success code:{} url:{} param:{} result:{}", response.code(), url, JSON.toJSONString(param), result);
+                throw new MyException("okhttp postForm not success code:" + response.code());
+            }
+            return result;
+        } catch (MyException e) {
+            throw e;
+        } catch (Exception e) {
             log.error("postForm error url:{} body:{}", url, JSON.toJSONString(param), e);
-            return StringUtils.EMPTY;
+            throw new MyException("okhttp postForm error", e);
         }
     }
 }

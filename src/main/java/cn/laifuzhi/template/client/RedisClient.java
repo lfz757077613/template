@@ -14,9 +14,13 @@ import redis.clients.jedis.params.SetParams;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
+import static java.time.temporal.ChronoUnit.MILLIS;
 
 @Slf4j
 @Component
@@ -39,7 +43,7 @@ public final class RedisClient {
         jedisPoolConfig.setMaxIdle(10);
         jedisPoolConfig.setMaxTotal(30);
         // 最大建立连接等待时间，仅在BlockWhenExhausted为true时生效，默认-1无限阻塞
-        jedisPoolConfig.setMaxWaitMillis(1500);
+        jedisPoolConfig.setMaxWait(Duration.of(1500L, MILLIS));
         // 连接耗尽时是否阻塞，false报异常，true阻塞直到超时，默认true
 //        jedisPoolConfig.setBlockWhenExhausted(true);
         // 3000既是soTimeout也是connectionTimeout

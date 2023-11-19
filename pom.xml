@@ -29,7 +29,7 @@
         <mybatis-starter.version>2.3.1</mybatis-starter.version>
         <!-- 不使用mybatis-spring-boot-starter，但是mybatis和mybatis-spring版本和mybatis-spring-boot-starter里的保持一致 -->
         <mybatis-spring.version>2.1.1</mybatis-spring.version>
-        <mybatis.version>3.5.13</mybatis.version>
+        <mybatis.version>3.5.14</mybatis.version>
         <druid.version>1.2.8</druid.version>
 
         <redisson.version>3.16.4</redisson.version>
