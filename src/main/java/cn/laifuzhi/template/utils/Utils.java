@@ -5,6 +5,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
+import io.netty.util.internal.PlatformDependent;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.HmacAlgorithms;
@@ -14,7 +15,10 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.Mac;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +30,19 @@ import static cn.laifuzhi.template.utils.Const.IP_PORT_REGEXP;
 
 @Slf4j
 public final class Utils {
+    /**
+     * 参考PlatformDependent0中对Bits类的处理执行unaligned方法的过程
+     */
+    private int pageSize = AccessController.doPrivileged((PrivilegedAction<Integer>) () -> {
+        try {
+            Class<?> bitsClass = Class.forName("java.nio.Bits", false, PlatformDependent.getSystemClassLoader());
+            Method pageSizeMethod = bitsClass.getDeclaredMethod("pageSize");
+            pageSizeMethod.setAccessible(true);
+            return (Integer) pageSizeMethod.invoke(null);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    });
     private static final Joiner.MapJoiner MAP_JOINER_AND = Joiner.on("&").withKeyValueSeparator("=");
     private static final Joiner.MapJoiner MAP_JOINER_COMMA = Joiner.on(",").withKeyValueSeparator("=");
     private static final Joiner.MapJoiner MAP_JOINER_LINE = Joiner.on(System.lineSeparator()).withKeyValueSeparator("=");
