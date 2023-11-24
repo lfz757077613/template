@@ -1,0 +1,21 @@
+# 基础镜像，安装git、helm、helm-acr插件、kubectl
+FROM xxx
+
+# helm版本支持策略 https://helm.sh/zh/docs/topics/version_skew/
+# https:github.com/helm/helm/releases下载太慢，构建镜像超时，使用oss转存
+ENV LANG en_US.UTF-8
+RUN echo 'source /etc/locale.conf' >> /home/admin/.bashrc \
+    && yum install git -y \
+    && curl -LO https://dl.k8s.io/release/v1.23.13/bin/linux/amd64/kubectl \
+    && mv kubectl /usr/bin \
+    && chmod 777 /usr/bin/kubectl \
+    && tar -zxvf /home/admin/helm-v3.9.4-linux-amd64.tar.gz -C /home/admin \
+    && rm -rf /home/admin/helm-v3.9.4-linux-amd64.tar.gz \
+    && mv /home/admin/linux-amd64/helm /usr/bin \
+    && rm -rf /home/admin/linux-amd64 \
+    && chmod 777 /usr/bin/helm \
+    && yum clean all
+
+USER admin
+# helm-acr下载很慢，有可能失败
+RUN helm plugin install https://github.com/AliyunContainerService/helm-acr
