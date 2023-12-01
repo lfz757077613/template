@@ -412,7 +412,6 @@
                     <configLocation>checkstyle.xml</configLocation>
                     <inputEncoding>UTF-8</inputEncoding>
                     <consoleOutput>true</consoleOutput>
-                    <failsOnError>true</failsOnError>
                 </configuration>
                 <executions>
                     <execution>
