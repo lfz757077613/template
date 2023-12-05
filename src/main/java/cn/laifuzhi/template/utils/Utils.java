@@ -15,6 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.Mac;
+import java.io.File;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.security.AccessController;
@@ -43,6 +44,22 @@ public final class Utils {
             throw new RuntimeException(e);
         }
     });
+
+    /*
+     * https://stackoverflow.com/questions/37560121/why-using-getfreespace-gettotalspace-getusablespace-gives-different-output-fr
+     * |------------- free ----------|
+     *           |-------usable------|----used-----|
+     * |-reserve-|
+     * |xxxxxxxxx|+++++++++++++++++++|=============|
+     * |---------------- total --------------------|
+     */
+    public static double diskRadio(File file) {
+        long totalSpace = file.getTotalSpace();
+        long freeSpace = file.getFreeSpace();
+        long usableSpace = file.getUsableSpace();
+        return (0.0 + totalSpace - freeSpace) / (totalSpace - freeSpace + usableSpace);
+    }
+
     private static final Joiner.MapJoiner MAP_JOINER_AND = Joiner.on("&").withKeyValueSeparator("=");
     private static final Joiner.MapJoiner MAP_JOINER_COMMA = Joiner.on(",").withKeyValueSeparator("=");
     private static final Joiner.MapJoiner MAP_JOINER_LINE = Joiner.on(System.lineSeparator()).withKeyValueSeparator("=");
