@@ -10,6 +10,7 @@ import com.alibaba.messaging.ops2.model.enumeration.RecordOperateEnum;
 import com.alibaba.messaging.ops2.model.req.BaseReq;
 import com.alibaba.messaging.ops2.model.resp.Resp;
 import com.alibaba.messaging.ops2.utils.CommonContext;
+import com.github.f4b6a3.ulid.Ulid;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -43,6 +44,7 @@ public class CommonAopImpl {
     @Around("@annotation(commonAop)")
     private Object process(ProceedingJoinPoint pjp, CommonAop commonAop) {
         long start = System.currentTimeMillis();
+        String ulid = Ulid.fast().toString();
         Method method = ((MethodSignature) pjp.getSignature()).getMethod();
         ParameterizedType returnType = (ParameterizedType) method.getGenericReturnType();
         if (returnType.getRawType() != Resp.class && returnType.getRawType() != DeferredResult.class) {
