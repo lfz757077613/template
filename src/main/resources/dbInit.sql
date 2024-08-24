@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS `lock_info`
 (
-    `id`          bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `id`          bigint unsigned     NOT NULL AUTO_INCREMENT COMMENT '主键',
     `lock_key`    varchar(128)        NOT NULL COMMENT '加锁的key',
     `expire_time` bigint unsigned     NOT NULL COMMENT '过期时间',
     `create_ts`   datetime(3)         NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',

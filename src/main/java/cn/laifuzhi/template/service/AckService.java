@@ -89,7 +89,7 @@
 //    private static final String KUBECTL_GET_PVC_LIST_NONE_LABEL = "kubectl get pvc --kubeconfig %s -l app.kubernetes.io/name=%s,!%s -o wide --show-labels";
 //    private static final String KUBECTL_DESCRIBE_POD = "kubectl describe pod --kubeconfig %s %s";
 //    private static final String KUBECTL_DELETE_POD = "kubectl delete pod --kubeconfig %s %s --wait=false";
-//    private static final String KUBECTL_DELETE_PVC = "kubectl delete pvc --kubeconfig %s -l app.kubernetes.io/instance=%s --wait=false";
+//    private static final String KUBECTL_DELETE_PVC_BY_INSTANCE = "kubectl delete pvc --kubeconfig %s -l app.kubernetes.io/instance=%s --wait=false";
 //    private static final String KUBECTL_ROLLOUT_STATUS_DEPLOY = "kubectl rollout status deploy --kubeconfig %s %s";
 //    private static final String KUBECTL_ROLLOUT_STATUS_STS = "kubectl rollout status sts --kubeconfig %s %s";
 //    private static final String KUBECTL_LABEL_PVC = "kubectl label pvc --kubeconfig %s %s %s %s=%s";
@@ -875,14 +875,14 @@
 //        }
 //    }
 //
-//    public void deletePvc(String ackId, String instanceName) {
+//    public void deletePvcByInstance(String ackId, String instanceName) {
 //        Tuple<ReadWriteLock, AckInfoPO> tuple = kubeconfigTuple(ackId);
 //        ReadWriteLock lock = tuple.getT1();
 //        AckInfoPO ackInfoPO = tuple.getT2();
 //        lock.readLock().lock();
 //        try {
 //            String kubeconfigPath = kubeconfigPathWithLock(lock, ackInfoPO);
-//            ExecUtils.exec(String.format(KUBECTL_DELETE_PVC, kubeconfigPath, instanceName));
+//            ExecUtils.exec(String.format(KUBECTL_DELETE_PVC_BY_INSTANCE, kubeconfigPath, instanceName));
 //        } finally {
 //            lock.readLock().unlock();
 //        }

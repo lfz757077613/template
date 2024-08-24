@@ -1,5 +1,6 @@
 package cn.laifuzhi.template.cron;
 
+import cn.laifuzhi.template.Application;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
@@ -48,6 +49,9 @@ public class MyScheduler {
     @Scheduled(cron = "0/10 * * * * ?")
     private void scheduler() {
         try {
+            if (!Application.isStarted()) {
+                return;
+            }
             executorService.execute(() -> {
                 try {
                     log.info("scheduler");
