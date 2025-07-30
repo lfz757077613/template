@@ -1,4 +1,5 @@
 server:
+#  springboot3.4默认为graceful
   shutdown: graceful
 #  仅支持对响应压缩，不支持对请求解压缩
   compression:
@@ -13,6 +14,12 @@ server:
 #  https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide
   max-http-header-size: 8KB
   tomcat:
+#   springboot3新增参数max-parameter-count
+    max-parameter-count: 10000
+#   springboot3.3增加如下两个参数，支持tomcat10/11中新增的两个文件上传配置，和下面spring.servlet.multipart一起工作
+#   https://github.com/spring-projects/spring-boot/issues/45881
+    max-part-count: 50
+    max-part-header-size: 512B
 #    max-http-response-header-size springboot3.1新增该参数
 
 #    建立tcp连接后，等待第一次http请求收到uri的时间，超过这个时间还没有收到uri，服务端主动关闭连接
@@ -31,6 +38,8 @@ server:
     threads:
       min-spare: 100
       max: 500
+#   springboot3.3新增参数，设置tomcat核心线程池的队列大小，默认无界
+      max-queue-capacity: 4096
 #    表单最大的post content默认2m，仅对表单的post请求生效，超出大小controller里取不到参数，设置负数代表不限制
     max-http-form-post-size: -1
 #    默认2m，当请求体中未读取数据大于2m(controller中取不到参数，只有httpRequest时则不读取请求体)，则返回结果添加Connection:close并关闭连接
