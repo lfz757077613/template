@@ -178,6 +178,11 @@ spring:
       shutdown:
         await-termination: true
         await-termination-period: 3s
+#     关闭resource chain的支持，则不会加载resourceUrlEncodingFilter
+#  web:
+#    resources:
+#      chain:
+#        enabled: false
 #  spring-shell相关设置
 #  shell:
 #    config:

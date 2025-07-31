@@ -82,9 +82,12 @@ import static cn.laifuzhi.template.utils.Const.FilterName.COMMON_FILTER;
  * Mapping filters: characterEncodingFilter urls=[/*] order=-2147483648, formContentFilter urls=[/*] order=-9900, requestContextFilter urls=[/*] order=-105
  * spring的dispatcherServlet的url-pattern是/不是/*，仅仅替换了servlet容器的默认servlet
  * Mapping servlets: dispatcherServlet urls=[/]
+ * springboot3使用knife4j会引入webjars-locate-lite包支持webjar省略版本号的访问，所以springboot会自动添加resourceUrlEncodingFilter urls=[/*] order=2147483647
+ * 可以通过spring.web.resources.chain.enabled:false关闭resourceUrlEncodingFilter的添加，关闭后则无法支持省略版本号访问webjars
  *
  * @EnableWebSocket和@EnableScheduling 同时使用会造成spring.task.schedule*设置失效(TaskSchedulingAutoConfiguration不自动生成ThreadPoolTaskScheduler)
  * ScheduledTaskRegistrar只会使用localExecutor，boot建议自己初始化ThreadPoolTaskScheduler
+ * springboot3中已经修复该问题
  * https://github.com/spring-projects/spring-boot/issues/28449
  *
  * @PostConstruct 初始化成员变量和线程可见性的关系(DefaultSingletonBeanRegistry)，因此最好任何时候都使用单例bean
