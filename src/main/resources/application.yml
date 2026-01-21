@@ -51,12 +51,13 @@ server:
 #       allow-caching: true
 #      没有默认值，tomcat默认ttl5秒，org.apache.catalina.webresources.Cache
 #      cache-ttl: 5s
-#    accesslog格式说明：https://tomcat.apache.org/tomcat-8.0-doc/config/valve.html#Access_Log_Valve/Attributes
+#    accesslog格式说明：https://tomcat.apache.org/tomcat-8.0-doc/config/valve.html#Access_Log_Valve/Attributes、https://tomcat.apache.org/tomcat-11.0-doc/config/valve.html#Access_Log_Valve/Attributes
+#    %D在tomcat不同版本含义不同，低版本是毫秒，高版本是微妙，高版本可以用%{ms}T代替
     accesslog:
       enabled: true
       max-days: 2
       directory: ${user.home}/logs
-      pattern: "%t %a %{X-Forwarded-For}i %r %s %b %Dms"
+      pattern: "%t %a %{X-Forwarded-For}i %r %s %b %{ms}Tms"
       buffered: false
       encoding: utf-8
 
